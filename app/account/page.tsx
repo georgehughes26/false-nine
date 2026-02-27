@@ -114,7 +114,7 @@ export default function AccountPage() {
         </div>
 
         <nav className="nav">
-  <a href="/" className="nav-item active">
+  <a href="/" className="nav-item">
     <span className="nav-icon">⚽</span>
     <span className="nav-label">Results</span>
   </a>
@@ -122,7 +122,7 @@ export default function AccountPage() {
     <span className="nav-icon">📈</span>
     <span className="nav-label">Performance</span>
   </a>
-  <a href="/account" className="nav-item">
+  <a href="/account" className="nav-item active">
     <span className="nav-icon">👤</span>
     <span className="nav-label">Account</span>
   </a>

@@ -188,7 +188,7 @@ const isPro = profile?.is_pro ?? false
 
   if (!match) return <div style={{ color: 'white', padding: '20px' }}>Match not found</div>
 
-  const [homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats, homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats] = await Promise.all([
+  const [homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats, homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats, playerPredictions] = await Promise.all([
     supabase.from('players').select('*').eq('team_name', match.home_team_name).order('games', { ascending: false }).then(r => r.data),
     supabase.from('players').select('*').eq('team_name', match.away_team_name).order('games', { ascending: false }).then(r => r.data),
     getTeamForm(match.home_team_name),
@@ -199,6 +199,7 @@ const isPro = profile?.is_pro ?? false
     getTeamStats(match.away_team_name),
     getTeamSeasonStats(match.home_team_name),
     getTeamSeasonStats(match.away_team_name),
+    supabase.from('player_predictions').select('*').eq('fixture_id', matchId).then(r => r.data),
   ])
 
   const time = new Date(match.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -539,13 +540,12 @@ const isPro = profile?.is_pro ?? false
         </div>
 
         <Predictions
-          match={match}
-          homePlayers={homePlayers ?? []}
-          awayPlayers={awayPlayers ?? []}
-          homeSeasonStats={homeSeasonStats}
-          awaySeasonStats={awaySeasonStats}
-          isPro={isPro}
-        />
+  match={match}
+  playerPredictions={playerPredictions ?? []}
+  homeSeasonStats={homeSeasonStats}
+  awaySeasonStats={awaySeasonStats}
+  isPro={isPro}
+/>
 
         <SquadView
           match={match}

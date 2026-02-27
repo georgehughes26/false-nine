@@ -8,8 +8,7 @@ const API_HOST = 'v3.football.api-sports.io'
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const LEAGUE_ID = 39
-const SEASON = 2024
-const MAX_PAGES = 3
+const SEASON = 2025
 
 async function apiCall(endpoint) {
   const res = await fetch(`https://${API_HOST}/${endpoint}`, {
@@ -21,6 +20,25 @@ async function apiCall(endpoint) {
   }
   console.log(`  → ${endpoint} — ${data.results} results`)
   return data.response ?? []
+}
+
+async function syncLeague() {
+  console.log('\n--- Syncing League ---')
+  const data = await apiCall(`leagues?id=${LEAGUE_ID}&season=${SEASON}`)
+  if (!data.length) return
+  const l = data[0]
+  const { error } = await supabase.from('leagues').upsert({
+    league_id: LEAGUE_ID,
+    season: SEASON,
+    name: l.league.name,
+    country: l.country.name,
+    logo: l.league.logo,
+    flag: l.country.flag,
+    start_date: l.seasons?.[0]?.start,
+    end_date: l.seasons?.[0]?.end,
+  }, { onConflict: 'league_id,season' })
+  if (error) console.error('League error:', error.message)
+  else console.log('✓ League synced')
 }
 
 async function syncTeams() {
@@ -87,6 +105,136 @@ async function syncFixtures() {
   console.log(`✓ ${fixtures.length} fixtures synced`)
 }
 
+async function syncMatchStats() {
+  console.log('\n--- Syncing Match Stats ---')
+  
+  // Get all played matches
+  const { data: playedMatches } = await supabase
+    .from('matches')
+    .select('fixture_id')
+    .not('goals_h', 'is', null)
+    .not('goals_a', 'is', null)
+
+  if (!playedMatches || playedMatches.length === 0) {
+    console.log('No played matches found')
+    return
+  }
+
+  console.log(`  → Found ${playedMatches.length} played matches to sync stats for`)
+  let synced = 0
+
+  for (const match of playedMatches) {
+    const data = await apiCall(`fixtures/statistics?fixture=${match.fixture_id}`)
+    if (!data || data.length < 2) continue
+
+    const parse = (teamStats, key) => {
+      const stat = teamStats.statistics.find(s => s.type === key)
+      const val = stat?.value
+      if (val === null || val === undefined || val === '') return null
+      if (typeof val === 'string' && val.includes('%')) return parseInt(val)
+      return typeof val === 'number' ? val : parseInt(val) || null
+    }
+
+    const home = data[0]
+    const away = data[1]
+
+    const { error } = await supabase.from('matches').update({
+      home_shots_total: parse(home, 'Total Shots'),
+      home_shots_on: parse(home, 'Shots on Goal'),
+      home_shots_off: parse(home, 'Shots off Goal'),
+      home_shots_blocked: parse(home, 'Blocked Shots'),
+      home_shots_box: parse(home, 'Shots insidebox'),
+      home_shots_outside: parse(home, 'Shots outsidebox'),
+      home_possession: parse(home, 'Ball Possession'),
+      home_passes_total: parse(home, 'Total passes'),
+      home_passes_accurate: parse(home, 'Passes accurate'),
+      home_passes_pct: parse(home, 'Passes %'),
+      home_fouls: parse(home, 'Fouls'),
+      home_corners: parse(home, 'Corner Kicks'),
+      home_offsides: parse(home, 'Offsides'),
+      home_yellow_cards: parse(home, 'Yellow Cards'),
+      home_red_cards: parse(home, 'Red Cards'),
+      home_saves: parse(home, 'Goalkeeper Saves'),
+      home_xg: parse(home, 'expected_goals'),
+      away_shots_total: parse(away, 'Total Shots'),
+      away_shots_on: parse(away, 'Shots on Goal'),
+      away_shots_off: parse(away, 'Shots off Goal'),
+      away_shots_blocked: parse(away, 'Blocked Shots'),
+      away_shots_box: parse(away, 'Shots insidebox'),
+      away_shots_outside: parse(away, 'Shots outsidebox'),
+      away_possession: parse(away, 'Ball Possession'),
+      away_passes_total: parse(away, 'Total passes'),
+      away_passes_accurate: parse(away, 'Passes accurate'),
+      away_passes_pct: parse(away, 'Passes %'),
+      away_fouls: parse(away, 'Fouls'),
+      away_corners: parse(away, 'Corner Kicks'),
+      away_offsides: parse(away, 'Offsides'),
+      away_yellow_cards: parse(away, 'Yellow Cards'),
+      away_red_cards: parse(away, 'Red Cards'),
+      away_saves: parse(away, 'Goalkeeper Saves'),
+      away_xg: parse(away, 'expected_goals'),
+    }).eq('fixture_id', match.fixture_id)
+
+    if (error) console.error(`Stats error (${match.fixture_id}):`, error.message)
+    else synced++
+
+    // Delay to avoid rate limiting
+    await new Promise(r => setTimeout(r, 150))
+  }
+
+  console.log(`✓ ${synced} match stats synced`)
+}
+
+async function syncMatchEvents() {
+  console.log('\n--- Syncing Match Events ---')
+
+  // Get all played matches
+  const { data: playedMatches } = await supabase
+    .from('matches')
+    .select('fixture_id')
+    .not('goals_h', 'is', null)
+    .not('goals_a', 'is', null)
+
+  if (!playedMatches || playedMatches.length === 0) {
+    console.log('No played matches found')
+    return
+  }
+
+  console.log(`  → Found ${playedMatches.length} played matches to sync events for`)
+  let synced = 0
+
+  for (const match of playedMatches) {
+    const data = await apiCall(`fixtures/events?fixture=${match.fixture_id}`)
+    if (!data || data.length === 0) continue
+
+    // Delete existing events for this fixture to avoid duplicates
+    await supabase.from('match_events').delete().eq('fixture_id', match.fixture_id)
+
+    const events = data.map((e) => ({
+      fixture_id: match.fixture_id,
+      elapsed: e.time?.elapsed,
+      elapsed_extra: e.time?.extra,
+      team_id: e.team?.id,
+      team_name: e.team?.name,
+      player_id: e.player?.id,
+      player_name: e.player?.name,
+      assist_id: e.assist?.id,
+      assist_name: e.assist?.name,
+      event_type: e.type,
+      event_detail: e.detail,
+      comments: e.comments,
+    }))
+
+    const { error } = await supabase.from('match_events').insert(events)
+    if (error) console.error(`Events error (${match.fixture_id}):`, error.message)
+    else synced++
+
+    await new Promise(r => setTimeout(r, 150))
+  }
+
+  console.log(`✓ ${synced} match events synced`)
+}
+
 async function syncStandings() {
   console.log('\n--- Syncing Standings ---')
   const data = await apiCall(`standings?league=${LEAGUE_ID}&season=${SEASON}`)
@@ -133,8 +281,10 @@ async function syncStandings() {
 async function syncPlayers() {
   console.log('\n--- Syncing Players ---')
   let totalSynced = 0
+  let page = 1
+  let totalPages = 1
 
-  for (let page = 1; page <= MAX_PAGES; page++) {
+  while (page <= totalPages) {
     const res = await fetch(`https://${API_HOST}/players?league=${LEAGUE_ID}&season=${SEASON}&page=${page}`, {
       headers: { 'x-apisports-key': API_KEY }
     })
@@ -145,9 +295,9 @@ async function syncPlayers() {
       break
     }
 
+    totalPages = data.paging?.total ?? 1
     const players = data.response ?? []
-    console.log(`  → Page ${page}/${data.paging?.total} — ${players.length} players`)
-
+    console.log(`  → Page ${page}/${totalPages} — ${players.length} players`)
     if (!players.length) break
 
     for (const item of players) {
@@ -208,16 +358,109 @@ async function syncPlayers() {
       if (error) console.error('Player error:', error.message)
       else totalSynced++
     }
+
+    page++
+    // Small delay to avoid rate limiting
+    await new Promise(r => setTimeout(r, 200))
   }
   console.log(`✓ ${totalSynced} players synced`)
 }
 
+async function syncPlayerPredictions() {
+  console.log('\n--- Syncing Player Predictions ---')
+
+  // Get all upcoming unplayed matches
+  const { data: upcomingMatches } = await supabase
+    .from('matches')
+    .select('fixture_id, home_team_id, away_team_id, home_team_name, away_team_name')
+    .is('goals_h', null)
+    .is('goals_a', null)
+
+  if (!upcomingMatches || upcomingMatches.length === 0) {
+    console.log('No upcoming matches found')
+    return
+  }
+
+  console.log(`  → Found ${upcomingMatches.length} upcoming matches`)
+
+  const categories = [
+    { key: 'shots_on_target', stat: 'shots_on', label: 'Shots on Target' },
+    { key: 'shots',           stat: 'shots_total', label: 'Shots' },
+    { key: 'bookings',        stat: 'yellow_cards', label: 'Bookings' },
+    { key: 'fouls_committed', stat: 'fouls_committed', label: 'Fouls Committed' },
+    { key: 'fouls_won',       stat: 'fouls_drawn', label: 'Fouls Won' },
+  ]
+
+  let synced = 0
+
+  for (const match of upcomingMatches) {
+    // Get players for both teams
+    const { data: players } = await supabase
+      .from('players')
+      .select('player_id, name, team_id, team_name, minutes, shots_on, shots_total, yellow_cards, fouls_committed, fouls_drawn')
+      .in('team_id', [match.home_team_id, match.away_team_id])
+      .eq('season', 2025)
+      .gt('minutes', 90) // must have played at least 90 mins
+
+    if (!players || players.length === 0) continue
+
+    // Delete existing predictions for this fixture
+    await supabase
+      .from('player_predictions')
+      .delete()
+      .eq('fixture_id', match.fixture_id)
+
+    const rows = []
+
+    for (const cat of categories) {
+      // Calculate per90 and sort
+      const ranked = players
+        .map(p => ({
+          ...p,
+          per90: p.minutes > 0 ? (p[cat.stat] / p.minutes) * 90 : 0,
+        }))
+        .filter(p => p[cat.stat] > 0)
+        .sort((a, b) => b.per90 - a.per90)
+        .slice(0, 3)
+
+      ranked.forEach((p, i) => {
+        rows.push({
+          fixture_id: match.fixture_id,
+          category: cat.key,
+          rank: i + 1,
+          player_id: p.player_id,
+          player_name: p.name,
+          team_id: p.team_id,
+          team_name: p.team_name,
+          stat_value: p[cat.stat],
+          per90_value: Math.round(p.per90 * 100) / 100,
+        })
+      })
+    }
+
+    if (rows.length > 0) {
+      const { error } = await supabase
+        .from('player_predictions')
+        .insert(rows)
+
+      if (error) console.error(`Player predictions error (${match.fixture_id}):`, error.message)
+      else synced++
+    }
+  }
+
+  console.log(`✓ ${synced} matches with player predictions synced`)
+}
+
 async function run() {
-  console.log('🚀 Starting False Nine sync — Premier League 2024...')
-  await syncTeams()
-  await syncFixtures()
-  await syncStandings()
-  await syncPlayers()
+  console.log('🚀 Starting False Nine sync — Premier League 2025/26...')
+ // await syncLeague()
+//  await syncTeams()
+  //await syncFixtures()
+  //await syncStandings()
+  //await syncPlayers()
+  //await syncMatchStats()
+  //await syncMatchEvents()
+  await syncPlayerPredictions()
   console.log('\n✅ Sync complete!')
 }
 

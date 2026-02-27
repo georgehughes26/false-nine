@@ -2,17 +2,14 @@
 
 import ProLock from '@/components/ProLock'
 
-interface Player {
+interface PlayerPrediction {
+  rank: number
   player_id: number
   player_name: string
   team_name: string
-  games: number
-  minutes: number
-  shots_on: number | null
-  shots_total: number | null
-  yellow_cards: number | null
-  fouls_committed: number | null
-  fouls_drawn: number | null
+  category: string
+  stat_value: number
+  per90_value: number
 }
 
 interface Match {
@@ -88,9 +85,8 @@ const medals = [
   { color: '#CD7F32', bg: 'rgba(205,127,50,0.10)', border: 'rgba(205,127,50,0.25)', emoji: '🥉' },
 ]
 
-function PlayerCard({ player, statValue, statLabel, rank }: {
-  player: Player | null
-  statValue: string
+function PlayerCard({ prediction, statLabel, rank }: {
+  prediction: PlayerPrediction | null
   statLabel: string
   rank: number
 }) {
@@ -117,14 +113,14 @@ function PlayerCard({ player, statValue, statLabel, rank }: {
         </div>
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8edf2' }}>
-            {player?.player_name ?? '—'}
+            {prediction?.player_name ?? '—'}
           </div>
           <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '2px' }}>
-            {player?.team_name ?? '—'}
+            {prediction?.team_name ?? '—'}
           </div>
-          {player && (
+          {prediction && (
             <div style={{ fontSize: '10px', color: '#2a3545', marginTop: '1px' }}>
-              {player.minutes ?? 0} mins
+              {prediction.stat_value} total this season
             </div>
           )}
         </div>
@@ -136,20 +132,23 @@ function PlayerCard({ player, statValue, statLabel, rank }: {
           letterSpacing: '1px',
           lineHeight: 1,
           color: medal.color,
-        }}>{statValue}</div>
+        }}>
+          {prediction?.per90_value ?? '—'}
+        </div>
         <div style={{
           fontSize: '9px', fontWeight: 600, letterSpacing: '1px',
           textTransform: 'uppercase' as const, color: '#4a5568', marginTop: '2px',
-        }}>{statLabel}</div>
+        }}>
+          Predicted {statLabel}
+        </div>
       </div>
     </div>
   )
 }
 
-export default function Predictions({ match, homePlayers, awayPlayers, homeSeasonStats, awaySeasonStats, isPro }: {
+export default function Predictions({ match, playerPredictions, homeSeasonStats, awaySeasonStats, isPro }: {
   match: Match
-  homePlayers: Player[]
-  awayPlayers: Player[]
+  playerPredictions: PlayerPrediction[]
   homeSeasonStats: SeasonStats | null
   awaySeasonStats: SeasonStats | null
   isPro: boolean
@@ -171,31 +170,24 @@ export default function Predictions({ match, homePlayers, awayPlayers, homeSeaso
   const over25 = calcOverUnder(homeAvg, awayAvg, 2.5)
   const over35 = calcOverUnder(homeAvg, awayAvg, 3.5)
 
-  const allPlayers = [...homePlayers, ...awayPlayers].filter(p => (p.games ?? 0) >= 1)
-  const hasPlayerData = allPlayers.some(p =>
-    p.shots_on !== null || p.shots_total !== null ||
-    p.yellow_cards !== null || p.fouls_committed !== null || p.fouls_drawn !== null
-  )
+  const getCategory = (cat: string) => {
+    const filtered = playerPredictions.filter(p => p.category === cat).sort((a, b) => a.rank - b.rank)
+    while (filtered.length < 3) filtered.push(null as any)
+    return filtered.slice(0, 3)
+  }
 
-  const sorted = (key: keyof Player) => hasPlayerData
-    ? [...allPlayers].sort((a, b) => ((b[key] as number) ?? 0) - ((a[key] as number) ?? 0)).slice(0, 3)
-    : [null, null, null]
+  const topShotsOn      = getCategory('shots_on_target')
+  const topShots        = getCategory('shots')
+  const topYellows      = getCategory('bookings')
+  const topFoulsCommit  = getCategory('fouls_committed')
+  const topFoulsWon     = getCategory('fouls_won')
 
-  const topShotsOn = sorted('shots_on')
-  const topShots = sorted('shots_total')
-  const topYellows = sorted('yellow_cards')
-  const topFoulsCommitted = sorted('fouls_committed')
-  const topFoulsWon = sorted('fouls_drawn')
+  const hasPlayerData = playerPredictions.length > 0
 
-  const playerCards = (
-    list: (Player | null)[],
-    key: keyof Player,
-    label: string
-  ) => [0, 1, 2].map(i => {
-    const p = list[i] as Player | null
-    const val = p?.[key] != null ? `${p![key]}` : '—'
-    return <PlayerCard key={i} player={p} statValue={val} statLabel={label} rank={i} />
-  })
+  const playerCards = (list: (PlayerPrediction | null)[], statLabel: string) =>
+    [0, 1, 2].map(i => (
+      <PlayerCard key={i} prediction={list[i]} statLabel={statLabel} rank={i} />
+    ))
 
   const goalsSection = (
     <>
@@ -231,104 +223,23 @@ export default function Predictions({ match, homePlayers, awayPlayers, homeSeaso
     </>
   )
 
-  const playerPicksSection = (
-    <>
-      <div className="pred-subtitle">Most Shots</div>
-      {playerCards(topShots, 'shots_total', 'Shots this season')}
-      <div className="pred-subtitle">Most Likely to be Booked</div>
-      {playerCards(topYellows, 'yellow_cards', 'Yellow cards')}
-      <div className="pred-subtitle">Most Fouls Committed</div>
-      {playerCards(topFoulsCommitted, 'fouls_committed', 'Fouls committed')}
-      <div className="pred-subtitle">Most Fouls Won</div>
-      {playerCards(topFoulsWon, 'fouls_drawn', 'Fouls won')}
-    </>
-  )
-
   return (
     <>
       <style>{`
         .pred-section { padding: 0 24px; margin-top: 4px; padding-bottom: 20px; }
-        .pred-title {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 22px;
-          letter-spacing: 2px;
-          color: #ffffff;
-          margin-bottom: 12px;
-        }
-        .pred-subtitle {
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: #4a5568;
-          margin: 12px 0 8px;
-        }
-        .pred-grid-3 {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 6px;
-          margin-bottom: 6px;
-        }
-        .pred-grid-4 {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 4px;
-          margin-bottom: 6px;
-        }
-        .pred-grid-2 {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 6px;
-          margin-bottom: 12px;
-        }
-        .pred-card {
-          border-radius: 10px;
-          padding: 10px 12px;
-          border: 1px solid #1a2030;
-          text-align: center;
-        }
-        .pred-card-sm {
-          border-radius: 10px;
-          padding: 8px 4px;
-          border: 1px solid #1a2030;
-          text-align: center;
-        }
-        .pred-pct {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 26px;
-          letter-spacing: 1px;
-          line-height: 1;
-        }
-        .pred-pct-sm {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 20px;
-          letter-spacing: 0.5px;
-          line-height: 1;
-        }
-        .pred-label {
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: #4a5568;
-          margin-top: 3px;
-        }
-        .pred-label-sm {
-          font-size: 7px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-          color: #4a5568;
-          margin-top: 2px;
-        }
+        .pred-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: #ffffff; margin-bottom: 12px; }
+        .pred-subtitle { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 12px 0 8px; }
+        .pred-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
+        .pred-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px; }
+        .pred-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }
+        .pred-card { border-radius: 10px; padding: 10px 12px; border: 1px solid #1a2030; text-align: center; }
+        .pred-card-sm { border-radius: 10px; padding: 8px 4px; border: 1px solid #1a2030; text-align: center; }
+        .pred-pct { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; line-height: 1; }
+        .pred-pct-sm { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.5px; line-height: 1; }
+        .pred-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; margin-top: 3px; }
+        .pred-label-sm { font-size: 7px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #4a5568; margin-top: 2px; }
         .divider { height: 1px; background: #1a2030; margin: 20px 0; }
-        .no-data-note {
-          font-size: 11px;
-          color: #2a3545;
-          text-align: center;
-          padding: 8px 0 16px;
-          font-style: italic;
-        }
+        .no-data-note { font-size: 11px; color: #2a3545; text-align: center; padding: 8px 0 16px; font-style: italic; }
       `}</style>
 
       <div className="pred-section">
@@ -354,41 +265,44 @@ export default function Predictions({ match, homePlayers, awayPlayers, homeSeaso
 
         <div className="divider" />
 
-<div className="pred-title">Player Picks</div>
-{!hasPlayerData && (
-  <div className="no-data-note">Player stats coming soon</div>
-)}
+        <div className="pred-title">Player Picks</div>
+        {!hasPlayerData && <div className="no-data-note">Player stats coming soon</div>}
 
-<div className="pred-subtitle">Most Shots on Target</div>
-{playerCards(topShotsOn, 'shots_on', 'Shots on target').slice(0, 1)}
-{isPro ? playerCards(topShotsOn, 'shots_on', 'Shots on target').slice(1) : (
-  <ProLock>{playerCards(topShotsOn, 'shots_on', 'Shots on target').slice(1)}</ProLock>
-)}
+        <div className="pred-subtitle">Most Shots on Target</div>
+        {playerCards(topShotsOn, 'Shots on target').slice(0, 1)}
+        {isPro
+          ? playerCards(topShotsOn, 'Shots on target').slice(1)
+          : <ProLock>{playerCards(topShotsOn, 'Shots on target').slice(1)}</ProLock>
+        }
 
-<div className="pred-subtitle">Most Shots</div>
-{playerCards(topShots, 'shots_total', 'Shots this season').slice(0, 1)}
-{isPro ? playerCards(topShots, 'shots_total', 'Shots this season').slice(1) : (
-  <ProLock>{playerCards(topShots, 'shots_total', 'Shots this season').slice(1)}</ProLock>
-)}
+        <div className="pred-subtitle">Most Shots</div>
+        {playerCards(topShots, 'Shots').slice(0, 1)}
+        {isPro
+          ? playerCards(topShots, 'Shots').slice(1)
+          : <ProLock>{playerCards(topShots, 'Shots').slice(1)}</ProLock>
+        }
 
-<div className="pred-subtitle">Most Likely to be Booked</div>
-{playerCards(topYellows, 'yellow_cards', 'Yellow cards').slice(0, 1)}
-{isPro ? playerCards(topYellows, 'yellow_cards', 'Yellow cards').slice(1) : (
-  <ProLock>{playerCards(topYellows, 'yellow_cards', 'Yellow cards').slice(1)}</ProLock>
-)}
+        <div className="pred-subtitle">Most Likely to be Booked</div>
+        {playerCards(topYellows, 'Yellow cards').slice(0, 1)}
+        {isPro
+          ? playerCards(topYellows, 'Yellow cards').slice(1)
+          : <ProLock>{playerCards(topYellows, 'Yellow cards').slice(1)}</ProLock>
+        }
 
-<div className="pred-subtitle">Most Fouls Committed</div>
-{playerCards(topFoulsCommitted, 'fouls_committed', 'Fouls committed').slice(0, 1)}
-{isPro ? playerCards(topFoulsCommitted, 'fouls_committed', 'Fouls committed').slice(1) : (
-  <ProLock>{playerCards(topFoulsCommitted, 'fouls_committed', 'Fouls committed').slice(1)}</ProLock>
-)}
+        <div className="pred-subtitle">Most Fouls Committed</div>
+        {playerCards(topFoulsCommit, 'Fouls committed').slice(0, 1)}
+        {isPro
+          ? playerCards(topFoulsCommit, 'Fouls committed').slice(1)
+          : <ProLock>{playerCards(topFoulsCommit, 'Fouls committed').slice(1)}</ProLock>
+        }
 
-<div className="pred-subtitle">Most Fouls Won</div>
-{playerCards(topFoulsWon, 'fouls_drawn', 'Fouls won').slice(0, 1)}
-{isPro ? playerCards(topFoulsWon, 'fouls_drawn', 'Fouls won').slice(1) : (
-  <ProLock>{playerCards(topFoulsWon, 'fouls_drawn', 'Fouls won').slice(1)}</ProLock>
-)}
-</div>
+        <div className="pred-subtitle">Most Fouls Won</div>
+        {playerCards(topFoulsWon, 'Fouls won').slice(0, 1)}
+        {isPro
+          ? playerCards(topFoulsWon, 'Fouls won').slice(1)
+          : <ProLock>{playerCards(topFoulsWon, 'Fouls won').slice(1)}</ProLock>
+        }
+      </div>
     </>
   )
 }
