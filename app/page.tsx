@@ -1,32 +1,38 @@
 import { supabase } from '@/lib/supabase'
 
+function parseGW(round: string | null): number {
+  if (!round) return 0
+  const m = round.match(/(\d+)/)
+  return m ? parseInt(m[1], 10) : 0
+}
+
 export default async function Home() {
   const { data: matches, error } = await supabase
     .from('matches')
     .select('*')
-    .is('goals_h', null)
-    .is('goals_a', null)
-    .order('datetime', { ascending: true })
+    .not('goals_h', 'is', null)
+    .not('goals_a', 'is', null)
+    .order('datetime', { ascending: false })
 
   if (error) {
     console.error(error)
-    return <div>Error loading fixtures</div>
+    return <div>Error loading results</div>
   }
 
   if (!matches) {
-    return <div>No matches found</div>
+    return <div>No results found</div>
   }
 
   const grouped: Record<string, any[]> = matches.reduce((acc: Record<string, any[]>, match: any) => {
-    const date = new Date(match.datetime).toLocaleDateString('en-GB', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    })
-    if (!acc[date]) acc[date] = []
-    acc[date].push(match)
+    const gw = match.round ?? 'Unknown'
+    if (!acc[gw]) acc[gw] = []
+    acc[gw].push(match)
     return acc
   }, {})
+
+  const sortedGroups = Object.entries(grouped).sort(
+    ([a], [b]) => parseGW(b) - parseGW(a)
+  )
 
   return (
     <>
@@ -160,24 +166,24 @@ export default async function Home() {
 
         .vs-block {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          gap: 2px;
+          gap: 6px;
           flex-shrink: 0;
         }
 
-        .vs {
+        .score {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 24px;
+          color: #ffffff;
+          letter-spacing: 1px;
+          min-width: 20px;
+          text-align: center;
+        }
+
+        .score-divider {
           font-family: 'Bebas Neue', sans-serif;
           font-size: 18px;
           color: #2a3545;
-          letter-spacing: 1px;
-        }
-
-        .match-time {
-          font-size: 11px;
-          font-weight: 600;
-          color: #00c864;
-          letter-spacing: 1px;
         }
 
         .match-meta {
@@ -215,6 +221,12 @@ export default async function Home() {
         .pill-l {
           background: rgba(255, 80, 80, 0.1);
           color: #ff5050;
+        }
+
+        .match-date-label {
+          font-size: 10px;
+          color: #4a5568;
+          letter-spacing: 0.5px;
         }
 
         .arrow {
@@ -270,43 +282,42 @@ export default async function Home() {
       <div className="app">
         <div className="header">
           <div className="logo">False Nine</div>
-          <div className="page-title">Fixtures</div>
-          <div className="match-count">{matches.length} upcoming matches</div>
+          <div className="page-title">Results</div>
+          <div className="match-count">{matches.length} matches played</div>
         </div>
 
         <div className="content">
-          {Object.entries(grouped).map(([date, dayMatches]) => (
-            <div key={date} className="date-group">
-              <div className="date-label">{date}</div>
-              {dayMatches.map((match: any) => {
-                const time = new Date(match.datetime).toLocaleTimeString('en-GB', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-                const fW = match.forecast_w ? Math.round(match.forecast_w * 100) : null
-                const fD = match.forecast_d ? Math.round(match.forecast_d * 100) : null
-                const fL = match.forecast_l ? Math.round(match.forecast_l * 100) : null
+          {sortedGroups.map(([round, gwMatches]) => (
+            <div key={round} className="date-group">
+              <div className="date-label">Gameweek {parseGW(round)}</div>
+              {gwMatches.map((match: any) => {
+                const h = match.goals_h
+                const a = match.goals_a
+                let resultClass = 'pill-d'
+                let resultLabel = 'D'
+                if (h > a) { resultClass = 'pill-w'; resultLabel = 'H' }
+                else if (a > h) { resultClass = 'pill-l'; resultLabel = 'A' }
 
                 return (
-                  <a key={match.match_id} href={`/match/${match.match_id}`} className="match-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                  <a key={match.fixture_id} href={`/match/${match.fixture_id}`} className="match-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                     <div className="match-teams">
-                      <div className="team">{match.h_title}</div>
+                      <div className="team">{match.home_team_name}</div>
                       <div className="vs-block">
-                        <span className="match-time">{time}</span>
-                        <span className="vs">VS</span>
+                        <span className="score">{h}</span>
+                        <span className="score-divider">-</span>
+                        <span className="score">{a}</span>
                       </div>
-                      <div className="team away">{match.a_title}</div>
+                      <div className="team away">{match.away_team_name}</div>
                     </div>
-                    {(fW || fD || fL) && (
-                      <div className="match-meta">
-                        <div className="forecast-pills">
-                          {fW && <span className="pill pill-w">W {fW}%</span>}
-                          {fD && <span className="pill pill-d">D {fD}%</span>}
-                          {fL && <span className="pill pill-l">L {fL}%</span>}
-                        </div>
-                        <span className="arrow">›</span>
+                    <div className="match-meta">
+                      <div className="forecast-pills">
+                        <span className={`pill ${resultClass}`}>{resultLabel}</span>
+                        <span className="match-date-label">
+                          {new Date(match.datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        </span>
                       </div>
-                    )}
+                      <span className="arrow">›</span>
+                    </div>
                   </a>
                 )
               })}
@@ -315,19 +326,19 @@ export default async function Home() {
         </div>
 
         <nav className="nav">
-          <div className="nav-item active">
-            <span className="nav-icon">⚽</span>
-            <span className="nav-label">Fixtures</span>
-          </div>
-          <div className="nav-item">
-            <span className="nav-icon">📈</span>
-            <span className="nav-label">Performance</span>
-          </div>
-          <div className="nav-item">
-            <span className="nav-icon">👤</span>
-            <span className="nav-label">Account</span>
-          </div>
-        </nav>
+  <a href="/" className="nav-item active" style={{ textDecoration: 'none' }}>
+    <span className="nav-icon">⚽</span>
+    <span className="nav-label">Results</span>
+  </a>
+  <a href="/performance" className="nav-item" style={{ textDecoration: 'none' }}>
+    <span className="nav-icon">📈</span>
+    <span className="nav-label">Performance</span>
+  </a>
+  <a href="/account" className="nav-item" style={{ textDecoration: 'none' }}>
+    <span className="nav-icon">👤</span>
+    <span className="nav-label">Account</span>
+  </a>
+</nav>
       </div>
     </>
   )
