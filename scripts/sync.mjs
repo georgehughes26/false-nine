@@ -451,16 +451,89 @@ async function syncPlayerPredictions() {
   console.log(`✓ ${synced} matches with player predictions synced`)
 }
 
+async function syncLineups() {
+  console.log('\n--- Syncing Lineups ---')
+
+  const { data: playedMatches } = await supabase
+    .from('matches')
+    .select('fixture_id')
+    .not('goals_h', 'is', null)
+    .not('goals_a', 'is', null)
+
+  if (!playedMatches || playedMatches.length === 0) {
+    console.log('No played matches found')
+    return
+  }
+
+  console.log(`  → Found ${playedMatches.length} played matches`)
+  let synced = 0
+
+  for (const match of playedMatches) {
+    const data = await apiCall(`fixtures/lineups?fixture=${match.fixture_id}`)
+    if (!data || data.length === 0) continue
+
+    // Delete existing lineups for this fixture
+    await supabase.from('lineups').delete().eq('fixture_id', match.fixture_id)
+
+    const rows = []
+
+    for (const team of data) {
+      // Starting 11
+      for (const player of (team.startXI ?? [])) {
+        rows.push({
+          fixture_id: match.fixture_id,
+          team_id: team.team.id,
+          team_name: team.team.name,
+          formation: team.formation,
+          player_id: player.player.id,
+          player_name: player.player.name,
+          player_number: player.player.number,
+          player_pos: player.player.pos,
+          is_substitute: false,
+          grid: player.player.grid,
+        })
+      }
+
+      // Substitutes
+      for (const player of (team.substitutes ?? [])) {
+        rows.push({
+          fixture_id: match.fixture_id,
+          team_id: team.team.id,
+          team_name: team.team.name,
+          formation: team.formation,
+          player_id: player.player.id,
+          player_name: player.player.name,
+          player_number: player.player.number,
+          player_pos: player.player.pos,
+          is_substitute: true,
+          grid: null,
+        })
+      }
+    }
+
+    if (rows.length > 0) {
+      const { error } = await supabase.from('lineups').insert(rows)
+      if (error) console.error(`Lineups error (${match.fixture_id}):`, error.message)
+      else synced++
+    }
+
+    await new Promise(r => setTimeout(r, 150))
+  }
+
+  console.log(`✓ ${synced} match lineups synced`)
+}
+
 async function run() {
   console.log('🚀 Starting False Nine sync — Premier League 2025/26...')
-  await syncLeague()
-  await syncTeams()
-  await syncFixtures()
+  //await syncLeague()
+  //await syncTeams()
+  //await syncFixtures()
   await syncStandings()
-  await syncPlayers()
+  //await syncPlayers()
   await syncMatchStats()
   await syncMatchEvents()
   await syncPlayerPredictions()
+  await syncLineups()
   console.log('\n✅ Sync complete!')
 }
 

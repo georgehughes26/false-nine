@@ -12,11 +12,6 @@ interface PlayerPrediction {
   per90_value: number
 }
 
-interface Match {
-  home_team_name: string
-  away_team_name: string
-}
-
 interface SeasonStats {
   games: number
   scored: number
@@ -146,8 +141,7 @@ function PlayerCard({ prediction, statLabel, rank }: {
   )
 }
 
-export default function Predictions({ match, playerPredictions, homeSeasonStats, awaySeasonStats, isPro }: {
-  match: Match
+export default function Predictions({ playerPredictions, homeSeasonStats, awaySeasonStats, isPro }: {
   playerPredictions: PlayerPrediction[]
   homeSeasonStats: SeasonStats | null
   awaySeasonStats: SeasonStats | null
@@ -176,11 +170,11 @@ export default function Predictions({ match, playerPredictions, homeSeasonStats,
     return filtered.slice(0, 3)
   }
 
-  const topShotsOn      = getCategory('shots_on_target')
-  const topShots        = getCategory('shots')
-  const topYellows      = getCategory('bookings')
-  const topFoulsCommit  = getCategory('fouls_committed')
-  const topFoulsWon     = getCategory('fouls_won')
+  const topShotsOn     = getCategory('shots_on_target')
+  const topShots       = getCategory('shots')
+  const topYellows     = getCategory('bookings')
+  const topFoulsCommit = getCategory('fouls_committed')
+  const topFoulsWon    = getCategory('fouls_won')
 
   const hasPlayerData = playerPredictions.length > 0
 

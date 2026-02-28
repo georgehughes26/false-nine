@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
-import GWFilterPage from '@/app/GWFilterPage'
+import GWFilterPage from './GWFilterPage'
+
 function parseGW(round: string | null): number {
   if (!round) return 0
   const m = round.match(/(\d+)/)
@@ -15,14 +16,6 @@ export default async function Home() {
   if (error) return <div>Error loading fixtures</div>
   if (!matches) return <div>No fixtures found</div>
 
-  const now = new Date()
-  const upcomingMatches = matches.filter(m => new Date(m.datetime) > now)
-  const nextGW = upcomingMatches.length > 0 ? parseGW(upcomingMatches[0].round) : 1
-
-  const upcomingGWs = [...new Set(
-    upcomingMatches.map(m => parseGW(m.round)).filter(Boolean)
-  )].sort((a, b) => a - b)
-
   const grouped: Record<string, any[]> = matches.reduce((acc: Record<string, any[]>, match: any) => {
     const gw = match.round ?? 'Unknown'
     if (!acc[gw]) acc[gw] = []
@@ -30,11 +23,21 @@ export default async function Home() {
     return acc
   }, {})
 
+  const gwNumbers = [...new Set(matches.map(m => parseGW(m.round)).filter(Boolean))].sort((a, b) => a - b)
+
+  const currentGW = gwNumbers.find(gw => {
+    const gwKey = Object.keys(grouped).find(k => parseGW(k) === gw)
+    const gwMatches = gwKey ? grouped[gwKey] : []
+    return gwMatches.some(m => m.goals_h === null || m.goals_a === null)
+  }) ?? gwNumbers[gwNumbers.length - 1]
+
+  const visibleGWs = gwNumbers.filter(gw => gw >= currentGW)
+
   return (
     <GWFilterPage
       matches={matches}
-      nextGW={nextGW}
-      upcomingGWs={upcomingGWs}
+      nextGW={currentGW}
+      upcomingGWs={visibleGWs}
       grouped={grouped}
     />
   )
