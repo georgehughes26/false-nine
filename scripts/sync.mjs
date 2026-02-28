@@ -453,13 +453,13 @@ async function syncPlayerPredictions() {
 
 async function run() {
   console.log('🚀 Starting False Nine sync — Premier League 2025/26...')
- // await syncLeague()
-//  await syncTeams()
-  //await syncFixtures()
-  //await syncStandings()
-  //await syncPlayers()
-  //await syncMatchStats()
-  //await syncMatchEvents()
+  await syncLeague()
+  await syncTeams()
+  await syncFixtures()
+  await syncStandings()
+  await syncPlayers()
+  await syncMatchStats()
+  await syncMatchEvents()
   await syncPlayerPredictions()
   console.log('\n✅ Sync complete!')
 }
