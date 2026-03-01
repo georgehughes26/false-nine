@@ -423,18 +423,19 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <MatchEvents match={match} events={matchEvents ?? []} lineups={lineups ?? []} />
         )}
 
-        {!isPlayed && (
-          <Predictions
-            playerPredictions={playerPredictions ?? []}
-            homeSeasonStats={homeSeasonStats}
-            awaySeasonStats={awaySeasonStats}
-            homeForm={homeForm}
-            awayForm={awayForm}
-            homeMatchStats={homeMatchStats}
-            awayMatchStats={awayMatchStats}
-            isPro={isPro}
-          />
-        )}
+{!isPlayed && (
+  <Predictions
+    playerPredictions={playerPredictions ?? []}
+    homeSeasonStats={homeSeasonStats}
+    awaySeasonStats={awaySeasonStats}
+    homeForm={homeForm}
+    awayForm={awayForm}
+    homeMatchStats={homeMatchStats}
+    awayMatchStats={awayMatchStats}
+    lineupsConfirmed={lineupsConfirmed}
+    isPro={isPro}
+  />
+)}
 
         {!isPlayed && (
           <SquadView
