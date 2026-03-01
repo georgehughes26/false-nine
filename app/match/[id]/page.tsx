@@ -7,10 +7,12 @@ import React from 'react'
 
 async function getRefereeStats(refereeName: string | null) {
   if (!refereeName) return null
+  const parts = refereeName.split(',')[0].trim().split(' ')
+  const lastName = parts[parts.length - 1]
   const { data: matches } = await supabase
     .from('matches')
     .select('home_yellow_cards, away_yellow_cards, home_red_cards, away_red_cards, home_fouls, away_fouls')
-    .eq('referee', refereeName)
+    .ilike('referee', `%${lastName}%`)
     .not('goals_h', 'is', null)
   if (!matches || matches.length === 0) return null
   const games = matches.length
@@ -133,6 +135,28 @@ async function getH2H(homeTeam: string, awayTeam: string) {
   return data?.[0] ?? null
 }
 
+async function getHomeStats(teamName: string) {
+  const { data } = await supabase
+    .from('matches')
+    .select('goals_h, goals_a, home_xg, away_xg')
+    .eq('home_team_name', teamName)
+    .not('goals_h', 'is', null)
+    .order('datetime', { ascending: false })
+    .limit(20)
+  return data ?? []
+}
+
+async function getAwayStats(teamName: string) {
+  const { data } = await supabase
+    .from('matches')
+    .select('goals_h, goals_a, home_xg, away_xg')
+    .eq('away_team_name', teamName)
+    .not('goals_h', 'is', null)
+    .order('datetime', { ascending: false })
+    .limit(20)
+  return data ?? []
+}
+
 export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const matchId = Number(id)
@@ -152,7 +176,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
   const isPlayed = match.goals_h !== null && match.goals_a !== null
 
-  const [homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats, homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats, playerPredictions, matchEvents, lineups] = await Promise.all([
+  const [homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats, homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats, playerPredictions, matchEvents, lineups, homeTeamData, awayTeamData, homeMatchStats, awayMatchStats] = await Promise.all([
     supabase.from('players').select('*').eq('team_name', match.home_team_name).order('games', { ascending: false }).then(r => r.data),
     supabase.from('players').select('*').eq('team_name', match.away_team_name).order('games', { ascending: false }).then(r => r.data),
     getTeamForm(match.home_team_name),
@@ -170,7 +194,25 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     isPlayed
       ? supabase.from('lineups').select('*').eq('fixture_id', matchId).then(r => r.data)
       : Promise.resolve([]),
+    supabase.from('teams').select('logo').eq('name', match.home_team_name).single().then(r => r.data),
+    supabase.from('teams').select('logo').eq('name', match.away_team_name).single().then(r => r.data),
+    getHomeStats(match.home_team_name),
+    getAwayStats(match.away_team_name),
+    
   ])
+
+  const homeLogo = homeTeamData?.logo ?? null
+  const awayLogo = awayTeamData?.logo ?? null
+
+  const lineupsConfirmed = !isPlayed
+  ? (await supabase
+      .from('lineups')
+      .select('player_id')
+      .eq('fixture_id', matchId)
+      .eq('is_substitute', false)
+      .limit(1)
+      .then(r => (r.data?.length ?? 0) > 0))
+  : false
 
   const time = new Date(match.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const date = new Date(match.datetime).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -184,6 +226,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
   const formBg = (r: string) => r === 'W' ? 'rgba(0,200,100,0.15)' : r === 'D' ? 'rgba(255,200,0,0.15)' : 'rgba(255,80,80,0.15)'
   const formColor = (r: string) => r === 'W' ? '#00c864' : r === 'D' ? '#ffc800' : '#ff5050'
+
+  const logoStyle: React.CSSProperties = { width: '56px', height: '56px', objectFit: 'contain' }
+  const logoPlaceholder = <div style={{ width: '56px', height: '56px' }} />
 
   return (
     <>
@@ -200,15 +245,14 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .teams-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
         .team-block { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .team-block.away { align-items: center; }
-        .team-name { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; line-height: 1.1; color: #ffffff; margin-bottom: 4px; text-align: center; width: 100%; min-height: 54px; display: flex; align-items: flex-end; justify-content: center; }
+        .team-name { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #4a5568; margin-top: 6px; text-align: center; line-height: 1.3; }
         .stat-row { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: flex-start; }
         .team-block.away .stat-row { flex-direction: row-reverse; }
         .stat-row-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; width: 28px; flex-shrink: 0; text-align: left; }
         .team-block.away .stat-row-label { text-align: right; }
         .badges { display: flex; gap: 3px; }
         .form-arrow { font-size: 10px; color: #2a3545; flex-shrink: 0; }
-        .score-block { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; flex-shrink: 0; padding-top: 36px; }
-        .score-main { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #00c864; letter-spacing: 4px; line-height: 1; }
+        .score-block { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; }
         .score-label { font-size: 10px; color: #4a5568; letter-spacing: 2px; text-transform: uppercase; }
         .h2h-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
         .h2h-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #1a2030; }
@@ -239,12 +283,14 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <div className="match-hero">
             <div className="match-date">{date}</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-              <div style={{
-                fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px', color: '#ffffff',
-                flex: 1, textAlign: 'center', lineHeight: 1.2,
-              }}>
-                {match.home_team_name}
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                {homeLogo ? <img src={homeLogo} alt={match.home_team_name} style={logoStyle} /> : logoPlaceholder}
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#4a5568', textAlign: 'center', letterSpacing: '0.5px' }}>
+                  {match.home_team_name}
+                </div>
               </div>
+
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '44px', color: '#00c864', letterSpacing: '8px', lineHeight: 1 }}>
                   {match.goals_h} - {match.goals_a}
@@ -258,12 +304,14 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                   Full Time
                 </div>
               </div>
-              <div style={{
-                fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px', color: '#ffffff',
-                flex: 1, textAlign: 'center', lineHeight: 1.2,
-              }}>
-                {match.away_team_name}
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                {awayLogo ? <img src={awayLogo} alt={match.away_team_name} style={logoStyle} /> : logoPlaceholder}
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#4a5568', textAlign: 'center', letterSpacing: '0.5px' }}>
+                  {match.away_team_name}
+                </div>
               </div>
+
             </div>
             {match.venue_name && (
               <div style={{ textAlign: 'center', fontSize: '11px', color: '#2a3545', marginBottom: '6px' }}>
@@ -280,7 +328,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <div className="match-hero">
             <div className="match-date">{date} · {time}</div>
             <div className="teams-row">
+
               <div className="team-block">
+                {homeLogo ? <img src={homeLogo} alt={match.home_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div className="team-name">{match.home_team_name}</div>
                 <div className="stat-row">
                   <span className="stat-row-label">Form</span>
@@ -301,11 +351,14 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                   <span className="form-arrow">→</span>
                 </div>
               </div>
+
               <div className="score-block">
                 <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '20px', color: '#2a3545', letterSpacing: '2px' }}>VS</span>
                 <span className="score-label">{time}</span>
               </div>
+
               <div className="team-block away">
+                {awayLogo ? <img src={awayLogo} alt={match.away_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div className="team-name">{match.away_team_name}</div>
                 <div className="stat-row">
                   <span className="stat-row-label">Form</span>
@@ -326,6 +379,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                   <span className="form-arrow">←</span>
                 </div>
               </div>
+
             </div>
             {h2h && (
               <div className="h2h-card">
@@ -374,6 +428,10 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             playerPredictions={playerPredictions ?? []}
             homeSeasonStats={homeSeasonStats}
             awaySeasonStats={awaySeasonStats}
+            homeForm={homeForm}
+            awayForm={awayForm}
+            homeMatchStats={homeMatchStats}
+            awayMatchStats={awayMatchStats}
             isPro={isPro}
           />
         )}

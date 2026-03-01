@@ -1,8 +1,14 @@
 {
-    "crons": [
-      {
-        "path": "/api/sync",
-        "schedule": "0 23 * * *"
-      }
-    ]
-  }
+  "crons": [
+    { "path": "/api/sync", "schedule": "35 11 * * *" },
+    { "path": "/api/sync", "schedule": "5 13 * * *" },
+    { "path": "/api/sync", "schedule": "5 14 * * *" },
+    { "path": "/api/sync", "schedule": "25 14 * * *" },
+    { "path": "/api/sync", "schedule": "35 15 * * *" },
+    { "path": "/api/sync", "schedule": "35 16 * * *" },
+    { "path": "/api/sync", "schedule": "50 18 * * *" },
+    { "path": "/api/sync", "schedule": "5 19 * * *" },
+    { "path": "/api/sync", "schedule": "15 22 * * *" },
+    { "path": "/api/sync", "schedule": "15 23 * * *" }
+  ]
+}

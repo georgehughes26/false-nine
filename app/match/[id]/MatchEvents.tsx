@@ -167,6 +167,71 @@ function SectionLabel({ text }: { text: string }) {
   )
 }
 
+function HalfDivider({ label }: { label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '10px 0' }}>
+      <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
+      <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '1px', color: '#4a5568' }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
+    </div>
+  )
+}
+
+function EventRow({ e, isHome }: { e: Event; isHome: boolean }) {
+  const icon = eventIcon(e.event_type, e.event_detail)
+  const isGoal = e.event_type === 'Goal'
+  const isCard = e.event_type === 'Card'
+  const isSub = e.event_type === 'subst'
+  const textColor = (isGoal || isCard) ? '#e8edf2' : '#4a5568'
+  const fontWeight = (isGoal || isCard) ? 600 : 400
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      justifyContent: isHome ? 'flex-start' : 'flex-end',
+      marginBottom: '6px', gap: '8px',
+    }}>
+      {isHome ? (
+        <>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '28px', flexShrink: 0, textAlign: 'right' }}>
+            {e.elapsed}{e.elapsed_extra ? `+${e.elapsed_extra}` : ''}'
+          </span>
+          <span style={{ fontSize: '14px' }}>{icon}</span>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight, color: textColor }}>
+              {isSub ? (
+                <><span style={{ color: '#00c864' }}>↑ {e.assist_name}</span><span style={{ color: '#ff5050' }}> ↓ {e.player_name}</span></>
+              ) : e.player_name}
+            </div>
+            {isGoal && e.assist_name && (
+              <div style={{ fontSize: '10px', color: '#4a5568' }}>Assist: {e.assist_name}</div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '12px', fontWeight, color: textColor }}>
+              {isSub ? (
+                <><span style={{ color: '#00c864' }}>↑ {e.assist_name}</span><span style={{ color: '#ff5050' }}> ↓ {e.player_name}</span></>
+              ) : e.player_name}
+            </div>
+            {isGoal && e.assist_name && (
+              <div style={{ fontSize: '10px', color: '#4a5568' }}>Assist: {e.assist_name}</div>
+            )}
+          </div>
+          <span style={{ fontSize: '14px' }}>{icon}</span>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '28px', flexShrink: 0 }}>
+            {e.elapsed}{e.elapsed_extra ? `+${e.elapsed_extra}` : ''}'
+          </span>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function MatchEvents({ match, events, lineups }: {
   match: Match
   events: Event[]
@@ -177,6 +242,10 @@ export default function MatchEvents({ match, events, lineups }: {
   const allEvents = events
     .filter(e => e.event_type === 'Goal' || e.event_type === 'Card' || e.event_type === 'subst')
     .sort((a, b) => a.elapsed - b.elapsed)
+
+  // Split events into first and second half
+  const firstHalfEvents = allEvents.filter(e => e.elapsed <= 45)
+  const secondHalfEvents = allEvents.filter(e => e.elapsed > 45)
 
   const hasStats = match.home_shots_total !== null || match.home_possession !== null
   const hasEvents = allEvents.length > 0
@@ -219,77 +288,23 @@ export default function MatchEvents({ match, events, lineups }: {
         <div style={{ marginBottom: '24px' }}>
           <SectionLabel text="Timeline" />
 
+          {/* First half events */}
+          {firstHalfEvents.map((e, i) => (
+            <EventRow key={i} e={e} isHome={isHome(e)} />
+          ))}
+
+          {/* HT divider */}
           {match.ht_goals_h !== null && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
-              <span style={{ fontSize: '10px', color: '#4a5568', fontWeight: 600, letterSpacing: '1px' }}>
-                HT {match.ht_goals_h} - {match.ht_goals_a}
-              </span>
-              <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
-            </div>
+            <HalfDivider label={`HT ${match.ht_goals_h} - ${match.ht_goals_a}`} />
           )}
 
-          {allEvents.map((e, i) => {
-            const home = isHome(e)
-            const icon = eventIcon(e.event_type, e.event_detail)
-            const isGoal = e.event_type === 'Goal'
-            const isCard = e.event_type === 'Card'
-            const isSub = e.event_type === 'subst'
-            const textColor = (isGoal || isCard) ? '#e8edf2' : '#4a5568'
-            const fontWeight = (isGoal || isCard) ? 600 : 400
+          {/* Second half events */}
+          {secondHalfEvents.map((e, i) => (
+            <EventRow key={i} e={e} isHome={isHome(e)} />
+          ))}
 
-            return (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center',
-                justifyContent: home ? 'flex-start' : 'flex-end',
-                marginBottom: '6px', gap: '8px',
-              }}>
-                {home ? (
-                  <>
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '28px', flexShrink: 0, textAlign: 'right' }}>
-                      {e.elapsed}{e.elapsed_extra ? `+${e.elapsed_extra}` : ''}'
-                    </span>
-                    <span style={{ fontSize: '14px' }}>{icon}</span>
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight, color: textColor }}>
-                        {isSub ? (
-                          <><span style={{ color: '#00c864' }}>↑ {e.assist_name}</span><span style={{ color: '#ff5050' }}> ↓ {e.player_name}</span></>
-                        ) : e.player_name}
-                      </div>
-                      {isGoal && e.assist_name && (
-                        <div style={{ fontSize: '10px', color: '#4a5568' }}>Assist: {e.assist_name}</div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '12px', fontWeight, color: textColor }}>
-                        {isSub ? (
-                          <><span style={{ color: '#00c864' }}>↑ {e.assist_name}</span><span style={{ color: '#ff5050' }}> ↓ {e.player_name}</span></>
-                        ) : e.player_name}
-                      </div>
-                      {isGoal && e.assist_name && (
-                        <div style={{ fontSize: '10px', color: '#4a5568' }}>Assist: {e.assist_name}</div>
-                      )}
-                    </div>
-                    <span style={{ fontSize: '14px' }}>{icon}</span>
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '28px', flexShrink: 0 }}>
-                      {e.elapsed}{e.elapsed_extra ? `+${e.elapsed_extra}` : ''}'
-                    </span>
-                  </>
-                )}
-              </div>
-            )
-          })}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-            <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
-            <span style={{ fontSize: '10px', color: '#00c864', fontWeight: 600, letterSpacing: '1px' }}>
-              FT {match.goals_h} - {match.goals_a}
-            </span>
-            <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
-          </div>
+          {/* FT divider */}
+          <HalfDivider label={`FT ${match.goals_h} - ${match.goals_a}`} />
         </div>
       )}
 
