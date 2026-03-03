@@ -19,5 +19,5 @@ jobs:
     steps:
       - name: Hit sync endpoint
         run: |
-          curl -X GET false-nine.vercel.app \
+          curl -X GET https://false-nine.vercel.app/api/sync \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
