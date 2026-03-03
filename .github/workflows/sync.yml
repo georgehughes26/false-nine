@@ -11,13 +11,13 @@ on:
     - cron: '5 19 * * *'
     - cron: '15 22 * * *'
     - cron: '15 23 * * *'
-  workflow_dispatch: # lets you trigger it manually from GitHub too
+  workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-- name: Hit sync endpoint
-  run: |
-    curl -L -v -X GET https://false-nine.vercel.app/api/sync \
-      -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+      - name: Hit sync endpoint
+        run: |
+          curl -L -v -X GET https://false-nine.vercel.app/api/sync \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
