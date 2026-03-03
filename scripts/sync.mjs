@@ -536,11 +536,11 @@ async function syncLineups() {
 
 async function run() {
   console.log('🚀 Starting False Nine sync — Premier League 2025/26...')
-  //await syncLeague()
-  //await syncTeams()
-  //await syncFixtures()
+  await syncLeague()
+  await syncTeams()
+  await syncFixtures()
   await syncStandings()
-  //await syncPlayers()
+  await syncPlayers()
   await syncMatchStats()
   await syncMatchEvents()
   await syncPlayerPredictions()

@@ -1,0 +1,23 @@
+name: Sync Fixtures
+
+on:
+  schedule:
+    - cron: '35 11 * * *'
+    - cron: '5 13 * * *'
+    - cron: '5 14 * * *'
+    - cron: '35 15 * * *'
+    - cron: '35 16 * * *'
+    - cron: '50 18 * * *'
+    - cron: '5 19 * * *'
+    - cron: '15 22 * * *'
+    - cron: '15 23 * * *'
+  workflow_dispatch: # lets you trigger it manually from GitHub too
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit sync endpoint
+        run: |
+          curl -X GET false-nine.vercel.app \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
