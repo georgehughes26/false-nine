@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 function parseGW(round: string | null): number {
   if (!round) return 0
@@ -41,18 +42,10 @@ interface Props {
 function MatchCard({ match }: { match: Match }) {
   const state = getMatchState(match)
   const kickoff = new Date(match.datetime)
-
-  const elapsedLabel = match.status_short === 'HT'
-    ? 'HT'
-    : match.status_elapsed
-      ? `${match.status_elapsed}'`
-      : 'LIVE'
+  const elapsedLabel = match.status_short === 'HT' ? 'HT' : match.status_elapsed ? `${match.status_elapsed}'` : 'LIVE'
 
   return (
-    <a
-      href={`/match/${match.fixture_id}`}
-      className={`match-card ${state}`}
-    >
+    <a href={`/match/${match.fixture_id}`} className={`match-card ${state}`}>
       <div className="match-teams">
         <div className="team">{match.home_team_name}</div>
         <div className="vs-block">
@@ -60,18 +53,16 @@ function MatchCard({ match }: { match: Match }) {
             <span className="vs-text">VS</span>
           ) : (
             <>
-              <span className={`score ${state === 'inplay' ? 'live' : ''}`}>{match.goals_h ?? 0}</span>
+              <span className={`score${state === 'inplay' ? ' live' : ''}`}>{match.goals_h ?? 0}</span>
               <span className="score-divider">–</span>
-              <span className={`score ${state === 'inplay' ? 'live' : ''}`}>{match.goals_a ?? 0}</span>
+              <span className={`score${state === 'inplay' ? ' live' : ''}`}>{match.goals_a ?? 0}</span>
             </>
           )}
         </div>
         <div className="team away">{match.away_team_name}</div>
       </div>
       <div className="match-meta">
-        {state === 'finished' && (
-          <span className="ft-badge">FT</span>
-        )}
+        {state === 'finished' && <span className="ft-badge">FT</span>}
         {state === 'inplay' && (
           <span className="live-badge">
             <span className="live-dot" />
@@ -94,15 +85,22 @@ function MatchCard({ match }: { match: Match }) {
 
 export default function GWFilterPage({ matches, nextGW, upcomingGWs, grouped }: Props) {
   const [selectedGW, setSelectedGW] = useState(nextGW)
+  const router = useRouter()
 
   const gwKey = Object.keys(grouped).find(k => parseGW(k) === selectedGW)
   const gwMatches = gwKey ? grouped[gwKey] : []
 
-  // Count states for subtitle
   const liveCount = gwMatches.filter(m => getMatchState(m) === 'inplay').length
-  const subtitle = liveCount > 0
-    ? `${liveCount} match${liveCount > 1 ? 'es' : ''} live`
-    : `Gameweek ${selectedGW}`
+  const hasLiveGames = liveCount > 0
+  const subtitle = hasLiveGames ? `${liveCount} match${liveCount > 1 ? 'es' : ''} live` : `Gameweek ${selectedGW}`
+
+  useEffect(() => {
+    if (!hasLiveGames) return
+    const interval = setInterval(() => {
+      router.refresh()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [hasLiveGames, router])
 
   return (
     <>
@@ -122,41 +120,27 @@ export default function GWFilterPage({ matches, nextGW, upcomingGWs, grouped }: 
         .gw-pill { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; cursor: pointer; border: 1px solid #1a2030; background: #0e1318; color: #4a5568; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
         .gw-pill.active { background: #00c864; color: #080c10; border-color: #00c864; }
         .content { padding: 8px 24px 100px; }
-
-        /* Base card */
         .match-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 16px; margin-bottom: 8px; display: block; text-decoration: none; color: inherit; transition: all 0.2s ease; position: relative; overflow: hidden; }
         .match-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #00c864; opacity: 0; transition: opacity 0.2s ease; }
         .match-card:hover { border-color: rgba(0,200,100,0.3); transform: translateX(2px); background: #111820; }
         .match-card:hover::before { opacity: 1; }
-
-        /* Finished */
         .match-card.finished { border-left: 3px solid rgba(0,200,100,0.3); }
-
-        /* In play */
         .match-card.inplay { border-left: 3px solid #00c864; background: #0a1510; }
         .match-card.inplay::before { opacity: 1; }
-
         .match-teams { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .team { flex: 1; font-size: 15px; font-weight: 500; color: #e8edf2; line-height: 1.2; }
         .team.away { text-align: right; }
         .vs-block { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .score { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #00c864; letter-spacing: 1px; min-width: 20px; text-align: center; }
-        .score.live { color: #00c864; }
         .score-divider { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #2a3545; }
         .vs-text { font-size: 12px; font-weight: 600; color: #2a3545; padding: 0 8px; }
-
         .match-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a2030; }
         .match-time { font-size: 12px; color: #4a5568; }
         .match-venue { font-size: 11px; color: #2a3545; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-
-        /* FT badge */
         .ft-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #00c864; background: rgba(0,200,100,0.1); padding: 2px 7px; border-radius: 4px; }
-
-        /* Live badge */
         .live-badge { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #ff4d4d; }
         .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; animation: pulse 1.2s ease-in-out infinite; flex-shrink: 0; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
-
         .arrow { color: #2a3545; font-size: 14px; }
         .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 12px 0 24px; z-index: 50; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
@@ -170,14 +154,14 @@ export default function GWFilterPage({ matches, nextGW, upcomingGWs, grouped }: 
         <div className="header">
           <div className="logo">False Nine</div>
           <div className="page-title">Fixtures</div>
-          <div className={`match-count ${liveCount > 0 ? 'has-live' : ''}`}>{subtitle}</div>
+          <div className={`match-count${hasLiveGames ? ' has-live' : ''}`}>{subtitle}</div>
         </div>
 
         <div className="gw-scroll">
           {upcomingGWs.map(gw => (
             <button
               key={gw}
-              className={`gw-pill ${selectedGW === gw ? 'active' : ''}`}
+              className={`gw-pill${selectedGW === gw ? ' active' : ''}`}
               onClick={() => setSelectedGW(gw)}
             >
               GW{gw}

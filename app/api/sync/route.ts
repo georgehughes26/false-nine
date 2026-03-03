@@ -44,43 +44,32 @@ export async function GET(req: NextRequest) {
   try {
     const now = new Date()
     const today = now.toISOString().split('T')[0]
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+    const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString()
 
-    // ── Check if there are any relevant matches in window ──────────────────
-    const { data: nearMatches } = await supabase
+    // ── Check if there are any matches today — 1 Supabase call, 0 API calls if none ──
+    const { data: todayMatches } = await supabase
       .from('matches')
       .select('fixture_id')
-      .gte('datetime', `${today}T00:00:00`)
-      .lte('datetime', `${tomorrow}T23:59:59`)
-
-    if (!nearMatches || nearMatches.length === 0) {
-      return NextResponse.json({ message: 'No matches today or tomorrow, skipping sync' })
-    }
-
-    // ── Get only upcoming (unplayed) matches ───────────────────────────────
-    const { data: upcomingMatches } = await supabase
-      .from('matches')
-      .select('fixture_id, home_team_id, away_team_id')
-      .is('goals_h', null)
-      .is('goals_a', null)
-
-    // ── Get only matches that completed today ──────────────────────────────
-    const { data: completedToday } = await supabase
-      .from('matches')
-      .select('fixture_id')
-      .not('goals_h', 'is', null)
-      .not('goals_a', 'is', null)
       .gte('datetime', `${today}T00:00:00`)
       .lte('datetime', `${today}T23:59:59`)
 
-    console.log(`Upcoming: ${upcomingMatches?.length ?? 0}, Completed today: ${completedToday?.length ?? 0}`)
+    if (!todayMatches || todayMatches.length === 0) {
+      return NextResponse.json({ message: 'No matches today, skipping' })
+    }
 
-    // ── 1. Sync fixtures — upcoming only ───────────────────────────────────
-    // Only fetch upcoming fixture IDs to update scores/status as they change
-    const upcomingIds = (upcomingMatches ?? []).map(m => m.fixture_id)
+    // ── 1. Sync upcoming (NS) matches today ────────────────────────────────
+    // Updates kickoff time, referee, round for fixtures not yet started
+    // API calls: 1 per NS match today (typically 0-10)
+    const { data: nsMatches } = await supabase
+      .from('matches')
+      .select('fixture_id')
+      .eq('status_short', 'NS')
+      .gte('datetime', `${today}T00:00:00`)
+      .lte('datetime', `${today}T23:59:59`)
 
-    for (const fixtureId of upcomingIds) {
-      const data = await apiCall(`fixtures?id=${fixtureId}`)
+    let nsSynced = 0
+    for (const match of (nsMatches ?? [])) {
+      const data = await apiCall(`fixtures?id=${match.fixture_id}`)
       if (!data || data.length === 0) continue
       const f = data[0]
       await supabase.from('matches').upsert({
@@ -105,111 +94,21 @@ export async function GET(req: NextRequest) {
         ft_goals_a: f.score.fulltime.away,
       }, { onConflict: 'fixture_id' })
       await new Promise(r => setTimeout(r, 100))
+      nsSynced++
     }
 
-    // ── 2. Sync stats + events for today's completed matches ───────────────
-    // Only sync matches that finished today — historical ones are already done
-    let statsSynced = 0
-    for (const match of (completedToday ?? [])) {
-      const stats = await apiCall(`fixtures/statistics?fixture=${match.fixture_id}`)
-      if (stats && stats.length >= 2) {
-        const home = stats[0]
-        const away = stats[1]
-        await supabase.from('matches').update({
-          home_shots_total: parse(home, 'Total Shots'),
-          home_shots_on: parse(home, 'Shots on Goal'),
-          home_shots_off: parse(home, 'Shots off Goal'),
-          home_shots_blocked: parse(home, 'Blocked Shots'),
-          home_corners: parse(home, 'Corner Kicks'),
-          home_fouls: parse(home, 'Fouls'),
-          home_yellow_cards: parse(home, 'Yellow Cards'),
-          home_red_cards: parse(home, 'Red Cards'),
-          home_possession: parse(home, 'Ball Possession'),
-          home_saves: parse(home, 'Goalkeeper Saves'),
-          home_xg: parse(home, 'expected_goals'),
-          away_shots_total: parse(away, 'Total Shots'),
-          away_shots_on: parse(away, 'Shots on Goal'),
-          away_shots_off: parse(away, 'Shots off Goal'),
-          away_shots_blocked: parse(away, 'Blocked Shots'),
-          away_corners: parse(away, 'Corner Kicks'),
-          away_fouls: parse(away, 'Fouls'),
-          away_yellow_cards: parse(away, 'Yellow Cards'),
-          away_red_cards: parse(away, 'Red Cards'),
-          away_possession: parse(away, 'Ball Possession'),
-          away_saves: parse(away, 'Goalkeeper Saves'),
-          away_xg: parse(away, 'expected_goals'),
-        }).eq('fixture_id', match.fixture_id)
-      }
+    // ── 2. Sync lineups for matches kicking off in next 2 hours ────────────
+    // Lineups drop ~1h15 before kickoff so this window catches them
+    // API calls: 1 per match in window (typically 0-3 per run)
+    const { data: upcomingLineupMatches } = await supabase
+      .from('matches')
+      .select('fixture_id, home_team_id, away_team_id')
+      .eq('status_short', 'NS')
+      .gte('datetime', now.toISOString())
+      .lte('datetime', twoHoursFromNow)
 
-      // Events
-      const events = await apiCall(`fixtures/events?fixture=${match.fixture_id}`)
-      if (events && events.length > 0) {
-        await supabase.from('match_events').delete().eq('fixture_id', match.fixture_id)
-        await supabase.from('match_events').insert(
-          events.map((e: any) => ({
-            fixture_id: match.fixture_id,
-            elapsed: e.time?.elapsed,
-            elapsed_extra: e.time?.extra,
-            team_id: e.team?.id,
-            team_name: e.team?.name,
-            player_id: e.player?.id,
-            player_name: e.player?.name,
-            assist_id: e.assist?.id,
-            assist_name: e.assist?.name,
-            event_type: e.type,
-            event_detail: e.detail,
-            comments: e.comments,
-          }))
-        )
-      }
-
-      // Lineups for completed matches
-      const lineupData = await apiCall(`fixtures/lineups?fixture=${match.fixture_id}`)
-      if (lineupData && lineupData.length > 0) {
-        await supabase.from('lineups').delete().eq('fixture_id', match.fixture_id)
-        const lineupRows: any[] = []
-        for (const team of lineupData) {
-          for (const player of (team.startXI ?? [])) {
-            lineupRows.push({
-              fixture_id: match.fixture_id,
-              team_id: team.team.id,
-              team_name: team.team.name,
-              formation: team.formation,
-              player_id: player.player.id,
-              player_name: player.player.name,
-              player_number: player.player.number,
-              player_pos: player.player.pos,
-              is_substitute: false,
-              grid: player.player.grid,
-            })
-          }
-          for (const player of (team.substitutes ?? [])) {
-            lineupRows.push({
-              fixture_id: match.fixture_id,
-              team_id: team.team.id,
-              team_name: team.team.name,
-              formation: team.formation,
-              player_id: player.player.id,
-              player_name: player.player.name,
-              player_number: player.player.number,
-              player_pos: player.player.pos,
-              is_substitute: true,
-              grid: null,
-            })
-          }
-        }
-        if (lineupRows.length > 0) {
-          await supabase.from('lineups').insert(lineupRows)
-        }
-      }
-
-      statsSynced++
-      await new Promise(r => setTimeout(r, 150))
-    }
-
-    // ── 3. Sync lineups for upcoming matches ───────────────────────────────
     let lineupsFound = 0
-    for (const match of (upcomingMatches ?? [])) {
+    for (const match of (upcomingLineupMatches ?? [])) {
       const lineupData = await apiCall(`fixtures/lineups?fixture=${match.fixture_id}`)
       if (!lineupData || lineupData.length === 0) continue
 
@@ -255,8 +154,18 @@ export async function GET(req: NextRequest) {
       await new Promise(r => setTimeout(r, 150))
     }
 
-    // ── 4. Sync player predictions for upcoming matches only ───────────────
-    for (const match of (upcomingMatches ?? [])) {
+    // ── 3. Rebuild player predictions for matches with confirmed lineups ───
+    // Only rebuilds if lineups were just found above
+    // API calls: 0 (Supabase only)
+    const upcomingForPredictions = await supabase
+      .from('matches')
+      .select('fixture_id, home_team_id, away_team_id')
+      .eq('status_short', 'NS')
+      .gte('datetime', `${today}T00:00:00`)
+      .lte('datetime', `${today}T23:59:59`)
+      .then(r => r.data ?? [])
+
+    for (const match of upcomingForPredictions) {
       const { data: lineupRows } = await supabase
         .from('lineups')
         .select('player_id')
@@ -315,7 +224,52 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // ── 5. Sync standings ──────────────────────────────────────────────────
+    // ── 4. Sync post-match stats for FT matches today ──────────────────────
+    // Events and lineups handled by sync-inplay, this just gets match stats
+    // API calls: 1 per FT match today (typically 0-10)
+    const { data: ftMatches } = await supabase
+      .from('matches')
+      .select('fixture_id')
+      .in('status_short', ['FT', 'AET', 'PEN'])
+      .gte('datetime', `${today}T00:00:00`)
+      .lte('datetime', `${today}T23:59:59`)
+
+    let statsSynced = 0
+    for (const match of (ftMatches ?? [])) {
+      const stats = await apiCall(`fixtures/statistics?fixture=${match.fixture_id}`)
+      if (stats && stats.length >= 2) {
+        const home = stats[0]
+        const away = stats[1]
+        await supabase.from('matches').update({
+          home_shots_total: parse(home, 'Total Shots'),
+          home_shots_on: parse(home, 'Shots on Goal'),
+          home_shots_off: parse(home, 'Shots off Goal'),
+          home_shots_blocked: parse(home, 'Blocked Shots'),
+          home_corners: parse(home, 'Corner Kicks'),
+          home_fouls: parse(home, 'Fouls'),
+          home_yellow_cards: parse(home, 'Yellow Cards'),
+          home_red_cards: parse(home, 'Red Cards'),
+          home_possession: parse(home, 'Ball Possession'),
+          home_saves: parse(home, 'Goalkeeper Saves'),
+          home_xg: parse(home, 'expected_goals'),
+          away_shots_total: parse(away, 'Total Shots'),
+          away_shots_on: parse(away, 'Shots on Goal'),
+          away_shots_off: parse(away, 'Shots off Goal'),
+          away_shots_blocked: parse(away, 'Blocked Shots'),
+          away_corners: parse(away, 'Corner Kicks'),
+          away_fouls: parse(away, 'Fouls'),
+          away_yellow_cards: parse(away, 'Yellow Cards'),
+          away_red_cards: parse(away, 'Red Cards'),
+          away_possession: parse(away, 'Ball Possession'),
+          away_saves: parse(away, 'Goalkeeper Saves'),
+          away_xg: parse(away, 'expected_goals'),
+        }).eq('fixture_id', match.fixture_id)
+      }
+      await new Promise(r => setTimeout(r, 150))
+      statsSynced++
+    }
+
+    // ── 5. Sync standings — 1 API call always ─────────────────────────────
     const standingsData = await apiCall(`standings?league=${LEAGUE_ID}&season=${SEASON}`)
     const standings = standingsData[0]?.league?.standings?.flat() ?? []
     for (const s of standings) {
@@ -340,10 +294,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       message: 'Sync complete',
-      matchesInWindow: nearMatches.length,
-      upcomingSynced: upcomingMatches?.length ?? 0,
-      completedTodaySynced: statsSynced,
-      lineupsFound,
+      nsSynced,           // API calls: 1 each
+      lineupsFound,       // API calls: 1 each
+      statsSynced,        // API calls: 1 each
+      standingsSynced: standings.length > 0, // API calls: 1 always
+      // Typical matchday total: ~21 API calls (10 NS + 3 lineups + 7 FT stats + 1 standings)
+      // Quiet day total: 1 API call (standings only)
     })
 
   } catch (err) {

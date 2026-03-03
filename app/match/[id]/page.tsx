@@ -2,8 +2,12 @@ import { supabase } from '@/lib/supabase'
 import SquadView from './SquadView'
 import Predictions from './Predictions'
 import MatchEvents from './MatchEvents'
+import MatchRefresher from './MatchRefresher'
 import { createSupabaseServer } from '@/lib/supabase-server'
 import React from 'react'
+
+const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
+const FINISHED_STATUSES = ['FT', 'AET', 'PEN']
 
 async function getRefereeStats(refereeName: string | null) {
   if (!refereeName) return null
@@ -174,7 +178,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
   if (!match) return <div style={{ color: 'white', padding: '20px' }}>Match not found</div>
 
-  const isPlayed = match.goals_h !== null && match.goals_a !== null
+  const isInPlay = match.status_short !== null && IN_PLAY_STATUSES.includes(match.status_short)
+  const isFinished = match.status_short !== null && FINISHED_STATUSES.includes(match.status_short)
+  const isPlayed = isInPlay || isFinished
 
   const [homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats, homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats, playerPredictions, matchEvents, lineups, homeTeamData, awayTeamData, homeMatchStats, awayMatchStats] = await Promise.all([
     supabase.from('players').select('*').eq('team_name', match.home_team_name).order('games', { ascending: false }).then(r => r.data),
@@ -198,21 +204,20 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     supabase.from('teams').select('logo').eq('name', match.away_team_name).single().then(r => r.data),
     getHomeStats(match.home_team_name),
     getAwayStats(match.away_team_name),
-    
   ])
 
   const homeLogo = homeTeamData?.logo ?? null
   const awayLogo = awayTeamData?.logo ?? null
 
   const lineupsConfirmed = !isPlayed
-  ? (await supabase
-      .from('lineups')
-      .select('player_id')
-      .eq('fixture_id', matchId)
-      .eq('is_substitute', false)
-      .limit(1)
-      .then(r => (r.data?.length ?? 0) > 0))
-  : false
+    ? (await supabase
+        .from('lineups')
+        .select('player_id')
+        .eq('fixture_id', matchId)
+        .eq('is_substitute', false)
+        .limit(1)
+        .then(r => (r.data?.length ?? 0) > 0))
+    : false
 
   const time = new Date(match.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const date = new Date(match.datetime).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -229,6 +234,10 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
   const logoStyle: React.CSSProperties = { width: '56px', height: '56px', objectFit: 'contain' }
   const logoPlaceholder = <div style={{ width: '56px', height: '56px' }} />
+
+  const scoreLabel = isInPlay
+    ? match.status_short === 'HT' ? 'Half Time' : `${match.status_elapsed ?? ''}'`
+    : 'Full Time'
 
   return (
     <>
@@ -254,6 +263,8 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .form-arrow { font-size: 10px; color: #2a3545; flex-shrink: 0; }
         .score-block { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; }
         .score-label { font-size: 10px; color: #4a5568; letter-spacing: 2px; text-transform: uppercase; }
+        .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; animation: pulse 1.2s ease-in-out infinite; display: inline-block; margin-right: 4px; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
         .h2h-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
         .h2h-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #1a2030; }
         .h2h-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; }
@@ -275,6 +286,8 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       `}</style>
 
       <div className="app">
+        <MatchRefresher statusShort={match.status_short} />
+
         <div className="back-bar">
           <a href="/" className="back-btn">← Fixtures</a>
         </div>
@@ -293,15 +306,16 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '44px', color: '#00c864', letterSpacing: '8px', lineHeight: 1 }}>
-                  {match.goals_h} - {match.goals_a}
+                  {match.goals_h ?? 0} - {match.goals_a ?? 0}
                 </div>
                 {match.ht_goals_h !== null && (
                   <div style={{ fontSize: '10px', color: '#2a3545', marginTop: '2px' }}>
                     HT {match.ht_goals_h} - {match.ht_goals_a}
                   </div>
                 )}
-                <div style={{ fontSize: '10px', color: '#4a5568', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '4px' }}>
-                  Full Time
+                <div style={{ fontSize: '10px', color: isInPlay ? '#ff4d4d' : '#4a5568', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {isInPlay && <span className="live-dot" />}
+                  {scoreLabel}
                 </div>
               </div>
 
@@ -423,19 +437,19 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <MatchEvents match={match} events={matchEvents ?? []} lineups={lineups ?? []} />
         )}
 
-{!isPlayed && (
-  <Predictions
-    playerPredictions={playerPredictions ?? []}
-    homeSeasonStats={homeSeasonStats}
-    awaySeasonStats={awaySeasonStats}
-    homeForm={homeForm}
-    awayForm={awayForm}
-    homeMatchStats={homeMatchStats}
-    awayMatchStats={awayMatchStats}
-    lineupsConfirmed={lineupsConfirmed}
-    isPro={isPro}
-  />
-)}
+        {!isPlayed && (
+          <Predictions
+            playerPredictions={playerPredictions ?? []}
+            homeSeasonStats={homeSeasonStats}
+            awaySeasonStats={awaySeasonStats}
+            homeForm={homeForm}
+            awayForm={awayForm}
+            homeMatchStats={homeMatchStats}
+            awayMatchStats={awayMatchStats}
+            lineupsConfirmed={lineupsConfirmed}
+            isPro={isPro}
+          />
+        )}
 
         {!isPlayed && (
           <SquadView

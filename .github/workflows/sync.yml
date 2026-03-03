@@ -2,15 +2,7 @@ name: Sync Fixtures
 
 on:
   schedule:
-    - cron: '35 11 * * *'
-    - cron: '5 13 * * *'
-    - cron: '5 14 * * *'
-    - cron: '35 15 * * *'
-    - cron: '35 16 * * *'
-    - cron: '50 18 * * *'
-    - cron: '5 19 * * *'
-    - cron: '15 22 * * *'
-    - cron: '15 23 * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -19,5 +11,5 @@ jobs:
     steps:
       - name: Hit sync endpoint
         run: |
-          curl -L -v -X GET https://false-nine.vercel.app/api/sync \
+          curl -L -X GET https://false-nine.vercel.app/api/sync \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

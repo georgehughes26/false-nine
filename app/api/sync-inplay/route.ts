@@ -26,7 +26,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Check for any in-play matches — 1 Supabase request, 0 API calls if none
     const { data: inPlayMatches } = await supabase
       .from('matches')
       .select('fixture_id')
@@ -36,9 +35,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'No in-play matches, skipping' })
     }
 
-    // Sync each in-play match
     let synced = 0
     for (const match of inPlayMatches) {
+      // Sync fixture scores and status
       const data = await apiCall(`fixtures?id=${match.fixture_id}`)
       if (!data || data.length === 0) continue
       const f = data[0]
@@ -64,6 +63,30 @@ export async function GET(req: NextRequest) {
         ft_goals_h: f.score.fulltime.home,
         ft_goals_a: f.score.fulltime.away,
       }, { onConflict: 'fixture_id' })
+
+      await new Promise(r => setTimeout(r, 100))
+
+      // Sync match events (timeline)
+      const events = await apiCall(`fixtures/events?fixture=${match.fixture_id}`)
+      if (events && events.length > 0) {
+        await supabase.from('match_events').delete().eq('fixture_id', match.fixture_id)
+        await supabase.from('match_events').insert(
+          events.map((e: any) => ({
+            fixture_id: match.fixture_id,
+            elapsed: e.time?.elapsed,
+            elapsed_extra: e.time?.extra,
+            team_id: e.team?.id,
+            team_name: e.team?.name,
+            player_id: e.player?.id,
+            player_name: e.player?.name,
+            assist_id: e.assist?.id,
+            assist_name: e.assist?.name,
+            event_type: e.type,
+            event_detail: e.detail,
+            comments: e.comments,
+          }))
+        )
+      }
 
       await new Promise(r => setTimeout(r, 100))
       synced++
