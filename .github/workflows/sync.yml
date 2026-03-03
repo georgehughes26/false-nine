@@ -17,7 +17,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Hit sync endpoint
-        run: |
-          curl -X GET https://false-nine.vercel.app/api/sync \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+- name: Hit sync endpoint
+  run: |
+    curl -L -v -X GET https://false-nine.vercel.app/api/sync \
+      -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
