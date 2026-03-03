@@ -3,7 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   // Allow sync endpoint through without auth
-  if (request.nextUrl.pathname.startsWith('/api/sync')) {
+  if (
+    request.nextUrl.pathname.startsWith('/api/sync')
+  ) {
     return NextResponse.next()
   }
 
@@ -36,6 +38,8 @@ export async function middleware(request: NextRequest) {
 
   return supabaseResponse
 }
+
+
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
