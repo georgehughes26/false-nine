@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
       }))
 
       // Only rank players who have actual data for this stat
-      const rankableItems = allItems.filter(i => i.rawValue !== null)
+      const rankableItems = allItems.filter(i => i.rawValue !== null && i.rawValue > 0)
       const ranked = rank(rankableItems.map(i => ({ name: String(i.player_id), value: i.value })))
 
       for (const item of rankableItems) {
