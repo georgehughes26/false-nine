@@ -6,6 +6,7 @@ import MatchRefresher from './MatchRefresher'
 import { createSupabaseServer } from '@/lib/supabase-server'
 import React from 'react'
 
+const SEASON = 2025
 const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
 const FINISHED_STATUSES = ['FT', 'AET', 'PEN']
 
@@ -182,7 +183,12 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const isFinished = match.status_short !== null && FINISHED_STATUSES.includes(match.status_short)
   const isPlayed = isInPlay || isFinished
 
-  const [homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats, homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats, playerPredictions, matchEvents, lineups, homeTeamData, awayTeamData, homeMatchStats, awayMatchStats] = await Promise.all([
+  const [
+    homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats,
+    homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats,
+    playerPredictions, matchEvents, lineups, homeTeamData, awayTeamData,
+    homeMatchStats, awayMatchStats, homeTeamRankings, awayTeamRankings, playerRankings
+  ] = await Promise.all([
     supabase.from('players').select('*').eq('team_name', match.home_team_name).order('games', { ascending: false }).then(r => r.data),
     supabase.from('players').select('*').eq('team_name', match.away_team_name).order('games', { ascending: false }).then(r => r.data),
     getTeamForm(match.home_team_name),
@@ -204,6 +210,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     supabase.from('teams').select('logo').eq('name', match.away_team_name).single().then(r => r.data),
     getHomeStats(match.home_team_name),
     getAwayStats(match.away_team_name),
+    supabase.from('team_rankings').select('*').eq('team_name', match.home_team_name).eq('season', SEASON).then(r => r.data),
+    supabase.from('team_rankings').select('*').eq('team_name', match.away_team_name).eq('season', SEASON).then(r => r.data),
+    supabase.from('player_rankings').select('*').eq('season', SEASON).in('team_name', [match.home_team_name, match.away_team_name]).then(r => r.data),
   ])
 
   const homeLogo = homeTeamData?.logo ?? null
@@ -238,12 +247,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const scoreLabel = isInPlay
     ? match.status_short === 'HT' ? 'Half Time' : `${match.status_elapsed ?? ''}'`
     : 'Full Time'
-
-  const statRowLabel: React.CSSProperties = {
-    fontSize: '8px', fontWeight: 600, letterSpacing: '1px',
-    textTransform: 'uppercase', color: '#4a5568', textAlign: 'center',
-    marginBottom: '3px',
-  }
 
   const badgeRow = (items: { bg: string, color: string, label: string }[]) => (
     <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
@@ -347,7 +350,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             <div className="match-date">{date} · {time}</div>
 
             <div className="teams-row">
-              {/* Home team */}
               <div className="team-block">
                 {homeLogo ? <img src={homeLogo} alt={match.home_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div className="team-name">{match.home_team_name}</div>
@@ -361,12 +363,10 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
-              {/* VS */}
               <div className="vs-block">
                 <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px', color: '#2a3545', letterSpacing: '1px' }}>VS</span>
               </div>
 
-              {/* Away team */}
               <div className="team-block">
                 {awayLogo ? <img src={awayLogo} alt={match.away_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div className="team-name">{match.away_team_name}</div>
@@ -444,6 +444,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             awayPlayers={awayPlayers ?? []}
             homeTeamStats={homeTeamStats}
             awayTeamStats={awayTeamStats}
+            homeTeamRankings={homeTeamRankings ?? []}
+            awayTeamRankings={awayTeamRankings ?? []}
+            playerRankings={playerRankings ?? []}
             isPro={isPro}
           />
         )}

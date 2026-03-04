@@ -16,12 +16,46 @@ interface TeamStats {
   saves: number
 }
 
-export default function SquadView({ match, homePlayers, awayPlayers, homeTeamStats, awayTeamStats, isPro }: {
+interface TeamRanking {
+  stat: string
+  total_rank: number | null
+  per_game_rank: number | null
+}
+
+interface PlayerRanking {
+  player_id: number
+  stat: string
+  per90_rank: number | null
+}
+
+function rankColor(rank: number | null): string {
+  if (rank === null) return '#2a3545'
+  if (rank <= 3) return '#00c864'
+  if (rank <= 10) return '#ffc800'
+  return '#2a3545'
+}
+
+function RankLabel({ rank }: { rank: number | null }) {
+  if (rank === null) return null
+  return (
+    <div style={{
+      fontSize: '8px', fontWeight: 700, letterSpacing: '0.5px',
+      color: rankColor(rank), marginTop: '2px',
+    }}>
+      #{rank}
+    </div>
+  )
+}
+
+export default function SquadView({ match, homePlayers, awayPlayers, homeTeamStats, awayTeamStats, homeTeamRankings, awayTeamRankings, playerRankings, isPro }: {
   match: any
   homePlayers: any[]
   awayPlayers: any[]
   homeTeamStats: TeamStats | null
   awayTeamStats: TeamStats | null
+  homeTeamRankings: TeamRanking[]
+  awayTeamRankings: TeamRanking[]
+  playerRankings: PlayerRanking[]
   isPro: boolean
 }) {
   const [activeTab, setActiveTab] = useState<'home' | 'away'>('home')
@@ -30,7 +64,18 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
   const players = activeTab === 'home' ? homePlayers : awayPlayers
   const teamName = activeTab === 'home' ? match.home_team_name : match.away_team_name
   const teamStats = activeTab === 'home' ? homeTeamStats : awayTeamStats
+  const teamRankings = activeTab === 'home' ? homeTeamRankings : awayTeamRankings
   const tackles = players.reduce((s: number, p: any) => s + (p.tackles_total ?? 0), 0)
+
+  const tRank = (stat: string): number | null => {
+    const r = teamRankings.find(r => r.stat === stat)
+    return per90 ? (r?.per_game_rank ?? null) : (r?.total_rank ?? null)
+  }
+
+  const pRank = (playerId: number, stat: string): number | null => {
+    const r = playerRankings.find(r => r.player_id === playerId && r.stat === stat)
+    return r?.per90_rank ?? null
+  }
 
   const tVal = (total: number) => {
     if (!teamStats) return '0'
@@ -80,22 +125,27 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
             <div className="team-stat">
               <div className="team-stat-value highlight">{tVal(teamStats.goals)}</div>
               <div className="team-stat-label">Goals</div>
+              <RankLabel rank={tRank('goals')} />
             </div>
             <div className="team-stat">
               <div className="team-stat-value dim">{tVal(teamStats.conceded)}</div>
               <div className="team-stat-label">Conc</div>
+              <RankLabel rank={tRank('conceded')} />
             </div>
             <div className="team-stat">
               <div className="team-stat-value">{tVal(teamStats.sot)}</div>
               <div className="team-stat-label">SOT</div>
+              <RankLabel rank={tRank('sot')} />
             </div>
             <div className="team-stat">
               <div className="team-stat-value">{tVal(teamStats.shots)}</div>
               <div className="team-stat-label">Shots</div>
+              <RankLabel rank={tRank('shots')} />
             </div>
             <div className="team-stat">
               <div className="team-stat-value">{tVal(teamStats.corners)}</div>
               <div className="team-stat-label">Corners</div>
+              <RankLabel rank={tRank('corners')} />
             </div>
           </div>
           <div className="team-stats-grid team-stats-row2">
@@ -106,18 +156,22 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
             <div className="team-stat">
               <div className="team-stat-value">{tVal(teamStats.fouls)}</div>
               <div className="team-stat-label">Fouls</div>
+              <RankLabel rank={tRank('fouls')} />
             </div>
             <div className="team-stat">
               <div className="team-stat-value yellow">{tVal(teamStats.yellows)}</div>
               <div className="team-stat-label">YC</div>
+              <RankLabel rank={tRank('yellows')} />
             </div>
             <div className="team-stat">
               <div className="team-stat-value red">{tVal(teamStats.reds)}</div>
               <div className="team-stat-label">RC</div>
+              <RankLabel rank={tRank('reds')} />
             </div>
             <div className="team-stat">
               <div className="team-stat-value">{tVal(teamStats.saves)}</div>
               <div className="team-stat-label">Saves</div>
+              <RankLabel rank={tRank('saves')} />
             </div>
           </div>
         </div>
@@ -135,34 +189,42 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
             <div className="stat">
               <div className={`stat-value ${!per90 && p.goals > 0 ? 'highlight' : ''}`}>{fmt(calc(p.goals, p.minutes))}</div>
               <div className="stat-label">Goals</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'goals')} />}
             </div>
             <div className="stat">
               <div className={`stat-value ${!per90 && p.assists > 0 ? 'highlight' : ''}`}>{fmt(calc(p.assists, p.minutes))}</div>
               <div className="stat-label">Ast</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'assists')} />}
             </div>
             <div className="stat">
               <div className="stat-value">{fmt(calc(p.shots_on, p.minutes))}</div>
               <div className="stat-label">SOT</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'shots_on')} />}
             </div>
             <div className="stat">
               <div className="stat-value">{fmt(calc(p.shots_total, p.minutes))}</div>
               <div className="stat-label">Shots</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'shots_total')} />}
             </div>
             <div className="stat">
               <div className="stat-value">{fmt(calc(p.fouls_committed, p.minutes))}</div>
               <div className="stat-label">Fouls C</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'fouls_committed')} />}
             </div>
             <div className="stat">
-  <div className="stat-value">{fmt(calc(p.fouls_drawn, p.minutes))}</div>
-  <div className="stat-label">Fouls W</div>
-</div>
+              <div className="stat-value">{fmt(calc(p.fouls_drawn, p.minutes))}</div>
+              <div className="stat-label">Fouls W</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'fouls_drawn')} />}
+            </div>
             <div className="stat">
               <div className="stat-value">{fmt(calc(p.tackles_total, p.minutes))}</div>
               <div className="stat-label">Tkl</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'tackles')} />}
             </div>
             <div className="stat">
               <div className="stat-value yellow">{fmt(calc(p.yellow_cards, p.minutes))}</div>
               <div className="stat-label">YC</div>
+              {per90 && <RankLabel rank={pRank(p.player_id, 'yellow_cards')} />}
             </div>
             <div className="stat">
               <div className="stat-value red">{fmt(calc(Number(p.red_cards), p.minutes))}</div>
