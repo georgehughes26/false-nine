@@ -2,13 +2,25 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Allow sync endpoint through without auth
+  const { pathname } = request.nextUrl
+
+  // ── Always allow these through ─────────────────────────────────────────
   if (
-    request.nextUrl.pathname.startsWith('/api/sync')
+    pathname.startsWith('/api/sync') ||
+    pathname.startsWith('/api/waitlist') ||
+    pathname.startsWith('/api/unlock') ||
+    pathname.startsWith('/coming-soon')
   ) {
     return NextResponse.next()
   }
 
+  // ── Check app password cookie ──────────────────────────────────────────
+  const unlocked = request.cookies.get('app_unlocked')?.value === 'true'
+  if (!unlocked) {
+    return NextResponse.redirect(new URL('/coming-soon', request.url))
+  }
+
+  // ── Supabase auth check ────────────────────────────────────────────────
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -30,7 +42,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  if (!user && !pathname.startsWith('/login')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -38,8 +50,6 @@ export async function middleware(request: NextRequest) {
 
   return supabaseResponse
 }
-
-
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
