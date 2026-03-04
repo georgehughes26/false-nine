@@ -24,8 +24,8 @@ const PLAYER_STATS = [
   { key: 'tackles',         col: 'tackles_total' },
 ]
 
-function rank(items: { name: string, value: number }[], ascending = false): { name: string, value: number, rank: number }[] {
-  const sorted = [...items].sort((a, b) => ascending ? a.value - b.value : b.value - a.value)
+function rank(items: { name: string, value: number }[]): { name: string, value: number, rank: number }[] {
+  const sorted = [...items].sort((a, b) => b.value - a.value)
   return sorted.map((item, i) => ({ ...item, rank: i + 1 }))
 }
 
@@ -90,8 +90,6 @@ export async function GET(req: NextRequest) {
       t.saves     += m.away_saves ?? 0
     }
 
-    const ascendingStats = new Set(['conceded', 'fouls', 'yellows', 'reds'])
-
     const teamRankingRows: any[] = []
 
     for (const stat of TEAM_STATS) {
@@ -100,8 +98,7 @@ export async function GET(req: NextRequest) {
         perGameValue: data.games > 0 ? data[stat] / data.games : 0,
       }))
 
-      const ascending = ascendingStats.has(stat)
-      const perGameRanked = rank(items.map(i => ({ name: i.name, value: i.perGameValue })), ascending)
+      const perGameRanked = rank(items.map(i => ({ name: i.name, value: i.perGameValue })))
 
       for (const item of items) {
         const pgr = perGameRanked.find(r => r.name === item.name)
@@ -140,8 +137,7 @@ export async function GET(req: NextRequest) {
         value: p.minutes > 0 ? ((p[ps.col as keyof typeof p] as number ?? 0) / p.minutes) * 90 : 0,
       }))
 
-      const ascending = ps.key === 'yellow_cards' || ps.key === 'fouls_committed'
-      const ranked = rank(items.map(i => ({ name: String(i.player_id), value: i.value })), ascending)
+      const ranked = rank(items.map(i => ({ name: String(i.player_id), value: i.value })))
 
       for (const item of items) {
         const r = ranked.find(r => r.name === String(item.player_id))
