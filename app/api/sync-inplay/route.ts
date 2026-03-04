@@ -26,64 +26,44 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data: inPlayMatches } = await supabase
-      .from('matches')
-      .select('fixture_id')
-      .in('status_short', ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE'])
+    const today = new Date().toISOString().split('T')[0]
 
-    if (!inPlayMatches || inPlayMatches.length === 0) {
-      return NextResponse.json({ message: 'No in-play matches, skipping' })
+    // Fetch today's fixtures directly from API instead of relying on DB status
+    const data = await apiCall(`fixtures?league=${LEAGUE_ID}&season=${SEASON}&date=${today}`)
+
+    const inPlayStatuses = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
+    const inPlayFixtures = data.filter((f: any) => inPlayStatuses.includes(f.fixture.status.short))
+
+    if (inPlayFixtures.length === 0) {
+      return NextResponse.json({ message: 'No in-play matches', synced: 0 })
     }
 
     let synced = 0
-    for (const match of inPlayMatches) {
-      // Sync fixture scores and status
-      const data = await apiCall(`fixtures?id=${match.fixture_id}`)
-      if (!data || data.length === 0) continue
-      const f = data[0]
-
-      await supabase.from('matches').upsert({
-        fixture_id: f.fixture.id,
-        league_id: LEAGUE_ID,
-        season: SEASON,
-        round: f.league.round,
-        datetime: f.fixture.date,
-        status_long: f.fixture.status?.long,
-        status_short: f.fixture.status?.short,
-        status_elapsed: f.fixture.status?.elapsed,
-        referee: f.fixture.referee,
-        home_team_id: f.teams.home.id,
-        home_team_name: f.teams.home.name,
-        away_team_id: f.teams.away.id,
-        away_team_name: f.teams.away.name,
+    for (const f of inPlayFixtures) {
+      // Update status and score in DB
+      await supabase.from('matches').update({
+        status_short: f.fixture.status.short,
+        status_elapsed: f.fixture.status.elapsed,
         goals_h: f.goals.home,
         goals_a: f.goals.away,
         ht_goals_h: f.score.halftime.home,
         ht_goals_a: f.score.halftime.away,
-        ft_goals_h: f.score.fulltime.home,
-        ft_goals_a: f.score.fulltime.away,
-      }, { onConflict: 'fixture_id' })
+      }).eq('fixture_id', f.fixture.id)
 
-      await new Promise(r => setTimeout(r, 100))
-
-      // Sync match events (timeline)
-      const events = await apiCall(`fixtures/events?fixture=${match.fixture_id}`)
+      // Sync events
+      const events = await apiCall(`fixtures/events?fixture=${f.fixture.id}`)
       if (events && events.length > 0) {
-        await supabase.from('match_events').delete().eq('fixture_id', match.fixture_id)
+        await supabase.from('match_events').delete().eq('fixture_id', f.fixture.id)
         await supabase.from('match_events').insert(
           events.map((e: any) => ({
-            fixture_id: match.fixture_id,
+            fixture_id: f.fixture.id,
             elapsed: e.time?.elapsed,
             elapsed_extra: e.time?.extra,
-            team_id: e.team?.id,
             team_name: e.team?.name,
-            player_id: e.player?.id,
             player_name: e.player?.name,
-            assist_id: e.assist?.id,
             assist_name: e.assist?.name,
             event_type: e.type,
             event_detail: e.detail,
-            comments: e.comments,
           }))
         )
       }
@@ -92,10 +72,7 @@ export async function GET(req: NextRequest) {
       synced++
     }
 
-    return NextResponse.json({
-      message: 'In-play sync complete',
-      synced,
-    })
+    return NextResponse.json({ message: 'In-play sync complete', synced })
 
   } catch (err) {
     console.error('In-play sync error:', err)
