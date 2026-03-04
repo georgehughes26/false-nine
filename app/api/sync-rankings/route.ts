@@ -190,7 +190,7 @@ export async function GET(req: NextRequest) {
       r.fouls   += (m.home_fouls ?? 0) + (m.away_fouls ?? 0)
     }
 
-    const qualifiedRefs = Object.entries(refMap).filter(([, d]) => d.games >= MIN_GAMES)
+    const qualifiedRefs = Object.entries(refMap)
 
     const refRankingRows: any[] = []
 

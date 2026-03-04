@@ -289,6 +289,8 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     : Promise.resolve([]),
   ])
 
+  console.log('DEBUG referee:', match.referee, '| lastName:', refLastName, '| rankings found:', refRankings?.length)
+
   const homeLogo = homeTeamData?.logo ?? null
   const awayLogo = awayTeamData?.logo ?? null
 
