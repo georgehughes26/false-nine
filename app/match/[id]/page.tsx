@@ -224,16 +224,16 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const h2hDate = h2h ? new Date(h2h.datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null
 
   const badgeStyle = (bg: string, color: string): React.CSSProperties => ({
-    width: '22px', height: '22px', borderRadius: '5px',
+    width: '18px', height: '18px', borderRadius: '4px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '10px', fontWeight: 700, background: bg, color, flexShrink: 0,
+    fontSize: '9px', fontWeight: 700, background: bg, color, flexShrink: 0,
   })
 
   const formBg = (r: string) => r === 'W' ? 'rgba(0,200,100,0.15)' : r === 'D' ? 'rgba(255,200,0,0.15)' : 'rgba(255,80,80,0.15)'
   const formColor = (r: string) => r === 'W' ? '#00c864' : r === 'D' ? '#ffc800' : '#ff5050'
 
-  const logoStyle: React.CSSProperties = { width: '56px', height: '56px', objectFit: 'contain' }
-  const logoPlaceholder = <div style={{ width: '56px', height: '56px' }} />
+  const logoStyle: React.CSSProperties = { width: '48px', height: '48px', objectFit: 'contain' }
+  const logoPlaceholder = <div style={{ width: '48px', height: '48px' }} />
 
   const scoreLabel = isInPlay
     ? match.status_short === 'HT' ? 'Half Time' : `${match.status_elapsed ?? ''}'`
@@ -251,20 +251,15 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .match-hero { padding: 24px; position: relative; }
         .match-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% 0%, rgba(0,200,100,0.12) 0%, transparent 70%); pointer-events: none; }
         .match-date { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 16px; font-weight: 600; text-align: center; }
-        .teams-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-.team-block { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.stat-row { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: flex-start; overflow: hidden; }
-.badges { display: flex; gap: 3px; overflow: hidden; flex-shrink: 1; }
-        .team-block.away { align-items: center; }
+        .teams-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-bottom: 12px; }
+        .team-block { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .team-name { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #4a5568; margin-top: 6px; text-align: center; line-height: 1.3; }
-        .stat-row { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: flex-start; }
+        .stat-row { display: flex; align-items: center; gap: 3px; width: 100%; justify-content: flex-start; overflow: hidden; }
         .team-block.away .stat-row { flex-direction: row-reverse; }
-        .stat-row-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; width: 28px; flex-shrink: 0; text-align: left; }
+        .stat-row-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; width: 24px; flex-shrink: 0; text-align: left; }
         .team-block.away .stat-row-label { text-align: right; }
-        .badges { display: flex; gap: 3px; }
-        .form-arrow { font-size: 10px; color: #2a3545; flex-shrink: 0; }
-        .score-block { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; }
-        .score-label { font-size: 10px; color: #4a5568; letter-spacing: 2px; text-transform: uppercase; }
+        .badges { display: flex; gap: 2px; flex-shrink: 1; min-width: 0; }
+        .score-block { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; padding-top: 12px; }
         .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; animation: pulse 1.2s ease-in-out infinite; display: inline-block; margin-right: 4px; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
         .h2h-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
@@ -298,7 +293,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <div className="match-hero">
             <div className="match-date">{date}</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                 {homeLogo ? <img src={homeLogo} alt={match.home_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div style={{ fontSize: '11px', fontWeight: 600, color: '#4a5568', textAlign: 'center', letterSpacing: '0.5px' }}>
@@ -327,7 +321,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                   {match.away_team_name}
                 </div>
               </div>
-
             </div>
             {match.venue_name && (
               <div style={{ textAlign: 'center', fontSize: '11px', color: '#2a3545', marginBottom: '6px' }}>
@@ -355,7 +348,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                       <div key={i} style={badgeStyle(formBg(f.result), formColor(f.result))}>{f.result}</div>
                     ))}
                   </div>
-                  <span className="form-arrow">→</span>
                 </div>
                 <div className="stat-row">
                   <span className="stat-row-label">BTTS</span>
@@ -364,13 +356,11 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                       <div key={i} style={badgeStyle(f.btts ? 'rgba(0,200,100,0.15)' : 'rgba(255,80,80,0.15)', f.btts ? '#00c864' : '#ff5050')}>●</div>
                     ))}
                   </div>
-                  <span className="form-arrow">→</span>
                 </div>
               </div>
 
               <div className="score-block">
-                <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '20px', color: '#2a3545', letterSpacing: '2px' }}>VS</span>
-                <span className="score-label">{time}</span>
+                <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px', color: '#2a3545', letterSpacing: '1px' }}>VS</span>
               </div>
 
               <div className="team-block away">
@@ -383,7 +373,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                       <div key={i} style={badgeStyle(formBg(f.result), formColor(f.result))}>{f.result}</div>
                     ))}
                   </div>
-                  <span className="form-arrow">←</span>
                 </div>
                 <div className="stat-row">
                   <span className="stat-row-label">BTTS</span>
@@ -392,7 +381,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                       <div key={i} style={badgeStyle(f.btts ? 'rgba(0,200,100,0.15)' : 'rgba(255,80,80,0.15)', f.btts ? '#00c864' : '#ff5050')}>●</div>
                     ))}
                   </div>
-                  <span className="form-arrow">←</span>
                 </div>
               </div>
 
