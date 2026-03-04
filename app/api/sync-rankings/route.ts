@@ -24,6 +24,8 @@ const PLAYER_STATS = [
   { key: 'tackles',         col: 'tackles_total' },
 ]
 
+const REF_STATS = ['yellows', 'reds', 'fouls']
+
 function rank(items: { name: string, value: number }[]): { name: string, value: number, rank: number }[] {
   const sorted = [...items].sort((a, b) => b.value - a.value)
   return sorted.map((item, i) => ({ ...item, rank: i + 1 }))
@@ -138,7 +140,6 @@ export async function GET(req: NextRequest) {
         value: p.minutes > 0 ? ((p[ps.col as keyof typeof p] as number ?? 0) / p.minutes) * 90 : 0,
       }))
 
-      // Only rank players who have actual data for this stat
       const rankableItems = allItems.filter(i => i.rawValue !== null && i.rawValue > 0)
       const ranked = rank(rankableItems.map(i => ({ name: String(i.player_id), value: i.value })))
 
@@ -163,10 +164,68 @@ export async function GET(req: NextRequest) {
       })
     }
 
+    // ── 3. Referee rankings ────────────────────────────────────────────────
+    const { data: allMatches } = await supabase
+      .from('matches')
+      .select('referee, home_yellow_cards, away_yellow_cards, home_red_cards, away_red_cards, home_fouls, away_fouls')
+      .eq('season', SEASON)
+      .not('goals_h', 'is', null)
+      .not('referee', 'is', null)
+
+    // Key by last name to group A.Madley + Andy Madley together, keep longest name as display
+    const refMap: Record<string, { games: number, yellows: number, reds: number, fouls: number, fullName: string }> = {}
+
+    for (const m of allMatches ?? []) {
+      const raw = m.referee.split(',')[0].trim()
+      const lastName = raw.split(' ').pop() ?? raw
+      if (!refMap[lastName]) {
+        refMap[lastName] = { games: 0, yellows: 0, reds: 0, fouls: 0, fullName: raw }
+      }
+      const r = refMap[lastName]
+      // Keep the longest/most complete name as display name
+      if (raw.length > r.fullName.length) r.fullName = raw
+      r.games++
+      r.yellows += (m.home_yellow_cards ?? 0) + (m.away_yellow_cards ?? 0)
+      r.reds    += (m.home_red_cards ?? 0) + (m.away_red_cards ?? 0)
+      r.fouls   += (m.home_fouls ?? 0) + (m.away_fouls ?? 0)
+    }
+
+    const qualifiedRefs = Object.entries(refMap).filter(([, d]) => d.games >= MIN_GAMES)
+
+    const refRankingRows: any[] = []
+
+    for (const stat of REF_STATS) {
+      const items = qualifiedRefs.map(([, data]) => ({
+        name: data.fullName,
+        perGameValue: data[stat as keyof typeof data] as number / data.games,
+      }))
+
+      const perGameRanked = rank(items.map(i => ({ name: i.name, value: i.perGameValue })))
+
+      for (const item of items) {
+        const pgr = perGameRanked.find(r => r.name === item.name)
+        refRankingRows.push({
+          referee_name: item.name,
+          season: SEASON,
+          stat,
+          per_game_value: Math.round(item.perGameValue * 100) / 100,
+          per_game_rank: pgr?.rank ?? null,
+          updated_at: new Date().toISOString(),
+        })
+      }
+    }
+
+    if (refRankingRows.length > 0) {
+      await supabase.from('referee_rankings').upsert(refRankingRows, {
+        onConflict: 'referee_name,season,stat'
+      })
+    }
+
     return NextResponse.json({
       message: 'Rankings sync complete',
       teamsProcessed: Object.keys(teamMap).length,
       playersProcessed: (players ?? []).length,
+      refereesProcessed: qualifiedRefs.length,
     })
 
   } catch (err) {
