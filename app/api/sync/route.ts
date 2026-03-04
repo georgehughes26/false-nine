@@ -47,7 +47,7 @@ async function syncFixtures() {
       goals_a: goals.away,
       ht_goals_h: score.halftime.home,
       ht_goals_a: score.halftime.away,
-    }, { onConflict: 'fixture_id' })
+    }, { onConflict: 'fixture_id', ignoreDuplicates: false })
   }
 
   return fixtures.length
