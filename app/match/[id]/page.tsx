@@ -251,11 +251,14 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const isFinished = match.status_short !== null && FINISHED_STATUSES.includes(match.status_short)
   const isPlayed = isInPlay || isFinished
 
+  const refName = match.referee ? match.referee.split(',')[0].trim() : null
+
   const [
     homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats,
     homeTeamStats, awayTeamStats, homeSeasonStats, awaySeasonStats,
     playerPredictions, matchEvents, lineups, homeTeamData, awayTeamData,
-    homeMatchStats, awayMatchStats, homeTeamRankings, awayTeamRankings, playerRankings
+    homeMatchStats, awayMatchStats, homeTeamRankings, awayTeamRankings,
+    playerRankings, refRankings
   ] = await Promise.all([
     supabase.from('players').select('*').eq('team_name', match.home_team_name).order('games', { ascending: false }).then(r => r.data),
     supabase.from('players').select('*').eq('team_name', match.away_team_name).order('games', { ascending: false }).then(r => r.data),
@@ -279,6 +282,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     supabase.from('team_rankings').select('*').eq('team_name', match.home_team_name).eq('season', SEASON).then(r => r.data),
     supabase.from('team_rankings').select('*').eq('team_name', match.away_team_name).eq('season', SEASON).then(r => r.data),
     supabase.from('player_rankings').select('*').eq('season', SEASON).in('team_name', [match.home_team_name, match.away_team_name]).then(r => r.data),
+    refName
+      ? supabase.from('referee_rankings').select('*').eq('referee_name', refName).eq('season', SEASON).then(r => r.data)
+      : Promise.resolve([]),
   ])
 
   const homeLogo = homeTeamData?.logo ?? null
@@ -287,6 +293,18 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const lineupsConfirmed = !isPlayed
     ? ((lineups ?? []).filter(l => !l.is_substitute).length > 0)
     : false
+
+  const refRank = (stat: string): number | null => {
+    const r = (refRankings ?? []).find((r: any) => r.stat === stat)
+    return r?.per_game_rank ?? null
+  }
+
+  const refRankColor = (rank: number | null): string => {
+    if (rank === null) return '#4a5568'
+    if (rank <= 3) return '#00c864'
+    if (rank <= 10) return '#ffc800'
+    return '#4a5568'
+  }
 
   const time = new Date(match.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const date = new Date(match.datetime).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -347,16 +365,18 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .h2h-team { font-size: 12px; font-weight: 600; color: #e8edf2; flex: 1; }
         .h2h-team.away { text-align: right; }
         .h2h-result { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #00c864; letter-spacing: 3px; flex-shrink: 0; }
-        .ref-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 8px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .ref-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .ref-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 8px 14px; margin-bottom: 12px; }
+        .ref-top { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #1a2030; min-width: 0; }
         .ref-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; flex-shrink: 0; }
         .ref-name { font-size: 12px; font-weight: 600; color: #e8edf2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ref-stats { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .ref-stat { display: flex; align-items: baseline; gap: 3px; }
-        .ref-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: #e8edf2; letter-spacing: 0.5px; line-height: 1; }
+        .ref-stats { display: flex; align-items: flex-start; gap: 0; }
+        .ref-stat { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 4px; }
+        .ref-stat + .ref-stat { border-left: 1px solid #1a2030; }
+        .ref-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #e8edf2; letter-spacing: 0.5px; line-height: 1; }
         .ref-stat-value.yellow { color: #ffc800; }
         .ref-stat-value.red { color: #ff5050; }
-        .ref-stat-label { font-size: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #4a5568; }
+        .ref-stat-label { font-size: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #4a5568; margin-top: 2px; }
+        .ref-stat-rank { font-size: 8px; font-weight: 700; margin-top: 2px; line-height: 1; }
       `}</style>
 
       <div className="app">
@@ -457,24 +477,34 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
             )}
+
             {match.referee && refStats && (
               <div className="ref-card">
-                <div className="ref-left">
+                <div className="ref-top">
                   <span className="ref-label">Ref</span>
                   <span className="ref-name">{match.referee}</span>
                 </div>
                 <div className="ref-stats">
                   <div className="ref-stat">
-                    <span className="ref-stat-value yellow">{refStats.yellowsPerGame.toFixed(1)}</span>
-                    <span className="ref-stat-label">YC</span>
+                    <div className="ref-stat-value yellow">{refStats.yellowsPerGame.toFixed(1)}</div>
+                    <div className="ref-stat-label">YC</div>
+                    <div className="ref-stat-rank" style={{ color: refRankColor(refRank('yellows')) }}>
+                      {refRank('yellows') !== null ? `#${refRank('yellows')}` : ''}
+                    </div>
                   </div>
                   <div className="ref-stat">
-                    <span className="ref-stat-value red">{refStats.redsPerGame.toFixed(2)}</span>
-                    <span className="ref-stat-label">RC</span>
+                    <div className="ref-stat-value red">{refStats.redsPerGame.toFixed(2)}</div>
+                    <div className="ref-stat-label">RC</div>
+                    <div className="ref-stat-rank" style={{ color: refRankColor(refRank('reds')) }}>
+                      {refRank('reds') !== null ? `#${refRank('reds')}` : ''}
+                    </div>
                   </div>
                   <div className="ref-stat">
-                    <span className="ref-stat-value">{refStats.foulsPerGame.toFixed(1)}</span>
-                    <span className="ref-stat-label">Fouls</span>
+                    <div className="ref-stat-value">{refStats.foulsPerGame.toFixed(1)}</div>
+                    <div className="ref-stat-label">Fouls</div>
+                    <div className="ref-stat-rank" style={{ color: refRankColor(refRank('fouls')) }}>
+                      {refRank('fouls') !== null ? `#${refRank('fouls')}` : ''}
+                    </div>
                   </div>
                 </div>
               </div>
