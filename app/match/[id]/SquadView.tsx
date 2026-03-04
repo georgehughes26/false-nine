@@ -150,8 +150,12 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
             </div>
             <div className="stat">
               <div className="stat-value">{fmt(calc(p.fouls_committed, p.minutes))}</div>
-              <div className="stat-label">Fouls</div>
+              <div className="stat-label">Fouls C</div>
             </div>
+            <div className="stat">
+  <div className="stat-value">{fmt(calc(p.fouls_drawn, p.minutes))}</div>
+  <div className="stat-label">Fouls W</div>
+</div>
             <div className="stat">
               <div className="stat-value">{fmt(calc(p.tackles_total, p.minutes))}</div>
               <div className="stat-label">Tkl</div>
