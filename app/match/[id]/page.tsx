@@ -239,6 +239,20 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     ? match.status_short === 'HT' ? 'Half Time' : `${match.status_elapsed ?? ''}'`
     : 'Full Time'
 
+  const statRowLabel: React.CSSProperties = {
+    fontSize: '8px', fontWeight: 600, letterSpacing: '1px',
+    textTransform: 'uppercase', color: '#4a5568', textAlign: 'center',
+    marginBottom: '3px',
+  }
+
+  const badgeRow = (items: { bg: string, color: string, label: string }[]) => (
+    <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+      {items.map((item, i) => (
+        <div key={i} style={badgeStyle(item.bg, item.color)}>{item.label}</div>
+      ))}
+    </div>
+  )
+
   return (
     <>
       <style>{`
@@ -250,16 +264,13 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .back-btn { font-size: 13px; color: #00c864; text-decoration: none; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
         .match-hero { padding: 24px; position: relative; }
         .match-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% 0%, rgba(0,200,100,0.12) 0%, transparent 70%); pointer-events: none; }
-        .match-date { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 16px; font-weight: 600; text-align: center; }
-        .teams-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-bottom: 12px; }
-        .team-block { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .team-name { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #4a5568; margin-top: 6px; text-align: center; line-height: 1.3; }
-        .stat-row { display: flex; align-items: center; gap: 3px; width: 100%; justify-content: flex-start; overflow: hidden; }
-        .team-block.away .stat-row { flex-direction: row-reverse; }
-        .stat-row-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; width: 24px; flex-shrink: 0; text-align: left; }
-        .team-block.away .stat-row-label { text-align: right; }
-        .badges { display: flex; gap: 2px; flex-shrink: 1; min-width: 0; }
-        .score-block { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; padding-top: 12px; }
+        .match-date { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 20px; font-weight: 600; text-align: center; }
+        .teams-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+        .team-block { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .team-name { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #4a5568; text-align: center; line-height: 1.3; }
+        .stat-group { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; }
+        .stat-group-label { font-size: 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; text-align: center; }
+        .vs-block { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; flex-shrink: 0; width: 36px; padding-top: 60px; gap: 38px; }
         .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; animation: pulse 1.2s ease-in-out infinite; display: inline-block; margin-right: 4px; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
         .h2h-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
@@ -299,7 +310,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                   {match.home_team_name}
                 </div>
               </div>
-
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '44px', color: '#00c864', letterSpacing: '8px', lineHeight: 1 }}>
                   {match.goals_h ?? 0} - {match.goals_a ?? 0}
@@ -314,7 +324,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                   {scoreLabel}
                 </div>
               </div>
-
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                 {awayLogo ? <img src={awayLogo} alt={match.away_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div style={{ fontSize: '11px', fontWeight: 600, color: '#4a5568', textAlign: 'center', letterSpacing: '0.5px' }}>
@@ -336,55 +345,42 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         ) : (
           <div className="match-hero">
             <div className="match-date">{date} · {time}</div>
-            <div className="teams-row">
 
+            <div className="teams-row">
+              {/* Home team */}
               <div className="team-block">
                 {homeLogo ? <img src={homeLogo} alt={match.home_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div className="team-name">{match.home_team_name}</div>
-                <div className="stat-row">
-                  <span className="stat-row-label">Form</span>
-                  <div className="badges">
-                    {homeForm.map((f, i) => (
-                      <div key={i} style={badgeStyle(formBg(f.result), formColor(f.result))}>{f.result}</div>
-                    ))}
-                  </div>
+                <div className="stat-group">
+                  <div className="stat-group-label">Form</div>
+                  {badgeRow(homeForm.map(f => ({ bg: formBg(f.result), color: formColor(f.result), label: f.result })))}
                 </div>
-                <div className="stat-row">
-                  <span className="stat-row-label">BTTS</span>
-                  <div className="badges">
-                    {homeForm.map((f, i) => (
-                      <div key={i} style={badgeStyle(f.btts ? 'rgba(0,200,100,0.15)' : 'rgba(255,80,80,0.15)', f.btts ? '#00c864' : '#ff5050')}>●</div>
-                    ))}
-                  </div>
+                <div className="stat-group">
+                  <div className="stat-group-label">BTTS</div>
+                  {badgeRow(homeForm.map(f => ({ bg: f.btts ? 'rgba(0,200,100,0.15)' : 'rgba(255,80,80,0.15)', color: f.btts ? '#00c864' : '#ff5050', label: '●' })))}
                 </div>
               </div>
 
-              <div className="score-block">
+              {/* VS */}
+              <div className="vs-block">
                 <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px', color: '#2a3545', letterSpacing: '1px' }}>VS</span>
               </div>
 
-              <div className="team-block away">
+              {/* Away team */}
+              <div className="team-block">
                 {awayLogo ? <img src={awayLogo} alt={match.away_team_name} style={logoStyle} /> : logoPlaceholder}
                 <div className="team-name">{match.away_team_name}</div>
-                <div className="stat-row">
-                  <span className="stat-row-label">Form</span>
-                  <div className="badges">
-                    {awayForm.map((f, i) => (
-                      <div key={i} style={badgeStyle(formBg(f.result), formColor(f.result))}>{f.result}</div>
-                    ))}
-                  </div>
+                <div className="stat-group">
+                  <div className="stat-group-label">Form</div>
+                  {badgeRow(awayForm.map(f => ({ bg: formBg(f.result), color: formColor(f.result), label: f.result })))}
                 </div>
-                <div className="stat-row">
-                  <span className="stat-row-label">BTTS</span>
-                  <div className="badges">
-                    {awayForm.map((f, i) => (
-                      <div key={i} style={badgeStyle(f.btts ? 'rgba(0,200,100,0.15)' : 'rgba(255,80,80,0.15)', f.btts ? '#00c864' : '#ff5050')}>●</div>
-                    ))}
-                  </div>
+                <div className="stat-group">
+                  <div className="stat-group-label">BTTS</div>
+                  {badgeRow(awayForm.map(f => ({ bg: f.btts ? 'rgba(0,200,100,0.15)' : 'rgba(255,80,80,0.15)', color: f.btts ? '#00c864' : '#ff5050', label: '●' })))}
                 </div>
               </div>
-
             </div>
+
             {h2h && (
               <div className="h2h-card">
                 <div className="h2h-top">
