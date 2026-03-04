@@ -325,6 +325,20 @@ export default function Predictions({ playerPredictions, homeSeasonStats, awaySe
 
 {!hasPlayerData && <div className="no-data-note">Player stats coming soon</div>}
 
+<div className="pred-subtitle">Most Shots on Target</div>
+{playerCards(topShotsOn, 'Shots on target').slice(0, 1)}
+{isPro
+  ? playerCards(topShotsOn, 'Shots on target').slice(1)
+  : <ProLock>{playerCards(topShotsOn, 'Shots on target').slice(1)}</ProLock>
+}
+
+<div className="pred-subtitle">Most Shots</div>
+{playerCards(topShots, 'Shots').slice(0, 1)}
+{isPro
+  ? playerCards(topShots, 'Shots').slice(1)
+  : <ProLock>{playerCards(topShots, 'Shots').slice(1)}</ProLock>
+}
+
         <div className="pred-subtitle">Most Likely to be Booked</div>
         {playerCards(topYellows, 'Yellow cards').slice(0, 1)}
         {isPro
