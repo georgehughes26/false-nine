@@ -4,11 +4,15 @@ on:
   schedule:
     - cron: '*/30 * * * *'
     - cron: '0 2 * * *'
+    - cron: '0 23 * * *'
   workflow_dispatch:
 
 jobs:
   sync-lineups:
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.schedule == '*/30 * * * *'
     steps:
       - name: Sync lineups and upcoming fixtures
         run: |
@@ -21,6 +25,38 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.event.schedule == '0 2 * * *'
     steps:
+      - name: Sync rankings
+        run: |
+          curl -sf -X GET https://false-nine.vercel.app/api/sync-rankings \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  sync-full:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.schedule == '0 23 * * *'
+    steps:
+      - name: Sync meta (teams, standings, fixtures)
+        run: |
+          curl -sf -X GET https://false-nine.vercel.app/api/sync-full-meta \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+      - name: Sync match data GW1-GW19
+        run: |
+          for gw in $(seq 1 19); do
+            curl -sf -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+            sleep 1
+          done
+
+      - name: Sync match data GW20-GW38
+        run: |
+          for gw in $(seq 20 38); do
+            curl -sf -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+            sleep 1
+          done
+
       - name: Sync rankings
         run: |
           curl -sf -X GET https://false-nine.vercel.app/api/sync-rankings \

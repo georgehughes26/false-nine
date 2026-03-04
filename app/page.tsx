@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import GWFilterPage from './GWFilterPage'
 
+export const revalidate = 30
+
 function parseGW(round: string | null): number {
   if (!round) return 0
   const m = round.match(/(\d+)/)
