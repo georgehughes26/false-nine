@@ -38,26 +38,28 @@ jobs:
     steps:
       - name: Sync meta (teams, standings, fixtures)
         run: |
-          curl -sf -X GET https://false-nine.vercel.app/api/sync-full-meta \
+          curl -f --max-time 30 -X GET https://false-nine.vercel.app/api/sync-full-meta \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
       - name: Sync match data GW1-GW19
         run: |
           for gw in $(seq 1 19); do
-            curl -sf -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
+            echo "Syncing GW$gw..."
+            curl -f --max-time 30 -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-            sleep 1
+            echo ""
           done
 
       - name: Sync match data GW20-GW38
         run: |
           for gw in $(seq 20 38); do
-            curl -sf -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
+            echo "Syncing GW$gw..."
+            curl -f --max-time 30 -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-            sleep 1
+            echo ""
           done
 
       - name: Sync rankings
         run: |
-          curl -sf -X GET https://false-nine.vercel.app/api/sync-rankings \
+          curl -f --max-time 30 -X GET https://false-nine.vercel.app/api/sync-rankings \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
