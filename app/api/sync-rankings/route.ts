@@ -7,6 +7,7 @@ const supabase = createClient(
 )
 
 const SEASON = 2025
+const MIN_GAMES = 10
 
 const TEAM_STATS = [
   'goals', 'conceded', 'sot', 'shots', 'corners', 'fouls', 'yellows', 'reds', 'saves'
@@ -51,7 +52,6 @@ export async function GET(req: NextRequest) {
     const hm = homeMatches ?? []
     const am = awayMatches ?? []
 
-    // Aggregate per team
     const teamMap: Record<string, Record<string, number>> = {}
 
     const ensureTeam = (name: string) => {
@@ -90,7 +90,6 @@ export async function GET(req: NextRequest) {
       t.saves     += m.away_saves ?? 0
     }
 
-    // For conceded, lower is better (rank ascending)
     const ascendingStats = new Set(['conceded', 'fouls', 'yellows', 'reds'])
 
     const teamRankingRows: any[] = []
@@ -98,25 +97,19 @@ export async function GET(req: NextRequest) {
     for (const stat of TEAM_STATS) {
       const items = Object.entries(teamMap).map(([name, data]) => ({
         name,
-        totalValue: data[stat],
         perGameValue: data.games > 0 ? data[stat] / data.games : 0,
       }))
 
       const ascending = ascendingStats.has(stat)
-
-      const totalRanked = rank(items.map(i => ({ name: i.name, value: i.totalValue })), ascending)
       const perGameRanked = rank(items.map(i => ({ name: i.name, value: i.perGameValue })), ascending)
 
       for (const item of items) {
-        const tr = totalRanked.find(r => r.name === item.name)
         const pgr = perGameRanked.find(r => r.name === item.name)
         teamRankingRows.push({
           team_name: item.name,
           season: SEASON,
           stat,
-          total_value: Math.round(item.totalValue * 100) / 100,
           per_game_value: Math.round(item.perGameValue * 100) / 100,
-          total_rank: tr?.rank ?? null,
           per_game_rank: pgr?.rank ?? null,
           updated_at: new Date().toISOString(),
         })
@@ -132,8 +125,9 @@ export async function GET(req: NextRequest) {
     // ── 2. Player rankings ─────────────────────────────────────────────────
     const { data: players } = await supabase
       .from('players')
-      .select('player_id, name, team_name, minutes, goals, assists, shots_on, shots_total, fouls_committed, fouls_drawn, yellow_cards, tackles_total')
+      .select('player_id, name, team_name, games, minutes, goals, assists, shots_on, shots_total, fouls_committed, fouls_drawn, yellow_cards, tackles_total')
       .eq('season', SEASON)
+      .gte('games', MIN_GAMES)
       .gt('minutes', 90)
 
     const playerRankingRows: any[] = []
@@ -173,7 +167,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       message: 'Rankings sync complete',
       teamsProcessed: Object.keys(teamMap).length,
-      playerStatsProcessed: playerRankingRows.length,
+      playersProcessed: (players ?? []).length,
     })
 
   } catch (err) {
