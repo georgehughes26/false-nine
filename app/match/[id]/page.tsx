@@ -493,14 +493,14 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                 <div className="ref-stats">
                   <div className="ref-stat">
                     <div className="ref-stat-value yellow">{refStats.yellowsPerGame.toFixed(1)}</div>
-                    <div className="ref-stat-label">YC</div>
+                    <div className="ref-stat-label">Yellow Cards</div>
                     <div className="ref-stat-rank" style={{ color: refRankColor(refRank('yellows')) }}>
                       {refRank('yellows') !== null ? `#${refRank('yellows')}` : ''}
                     </div>
                   </div>
                   <div className="ref-stat">
                     <div className="ref-stat-value red">{refStats.redsPerGame.toFixed(2)}</div>
-                    <div className="ref-stat-label">RC</div>
+                    <div className="ref-stat-label">Red Cards</div>
                     <div className="ref-stat-rank" style={{ color: refRankColor(refRank('reds')) }}>
                       {refRank('reds') !== null ? `#${refRank('reds')}` : ''}
                     </div>
