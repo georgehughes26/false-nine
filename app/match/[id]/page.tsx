@@ -252,7 +252,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .match-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% 0%, rgba(0,200,100,0.12) 0%, transparent 70%); pointer-events: none; }
         .match-date { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 16px; font-weight: 600; text-align: center; }
         .teams-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-        .team-block { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.team-block { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-row { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: flex-start; overflow: hidden; }
+.badges { display: flex; gap: 3px; overflow: hidden; flex-shrink: 1; }
         .team-block.away { align-items: center; }
         .team-name { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #4a5568; margin-top: 6px; text-align: center; line-height: 1.3; }
         .stat-row { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: flex-start; }
