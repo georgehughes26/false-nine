@@ -1,0 +1,27 @@
+name: Daily Sync
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-lineups:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync lineups and upcoming fixtures
+        run: |
+          curl -sf -X GET https://false-nine.vercel.app/api/sync-lineups \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  sync-rankings:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.schedule == '0 2 * * *'
+    steps:
+      - name: Sync rankings
+        run: |
+          curl -sf -X GET https://false-nine.vercel.app/api/sync-rankings \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+const API_KEY = process.env.API_FOOTBALL_KEY!
+const LEAGUE_ID = 39
+const SEASON = 2025
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const API_KEY = process.env.API_FOOTBALL_KEY!
-const API_HOST = 'v3.football.api-sports.io'
-const LEAGUE_ID = 39
-const SEASON = 2025
-
-async function apiCall(endpoint: string) {
-  const res = await fetch(`https://${API_HOST}/${endpoint}`, {
-    headers: { 'x-apisports-key': API_KEY }
+async function apiFetch(path: string) {
+  const res = await fetch(`https://v3.football.api-sports.io/${path}`, {
+    headers: { 'x-apisports-key': API_KEY },
   })
-  const data = await res.json()
-  return data.response ?? []
+  return res.json()
 }
 
 export async function GET(req: NextRequest) {
@@ -27,95 +25,47 @@ export async function GET(req: NextRequest) {
 
   try {
     const today = new Date().toISOString().split('T')[0]
+    const data = await apiFetch(`fixtures?league=${LEAGUE_ID}&season=${SEASON}&date=${today}`)
+    const fixtures = data.response ?? []
 
-    const data = await apiCall(`fixtures?league=${LEAGUE_ID}&season=${SEASON}&date=${today}`)
-
-    const inPlayStatuses = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
-    const inPlayFixtures = data.filter((f: any) => inPlayStatuses.includes(f.fixture.status.short))
-
-    if (inPlayFixtures.length === 0) {
-      return NextResponse.json({ message: 'No in-play matches', synced: 0 })
+    if (fixtures.length === 0) {
+      return NextResponse.json({ message: 'No fixtures today', synced: 0 })
     }
 
-    let synced = 0
-    for (const f of inPlayFixtures) {
-      // Update status and score in DB
-      await supabase.from('matches').update({
-        status_short: f.fixture.status.short,
+    await Promise.all(fixtures.map((f: any) =>
+      supabase.from('matches').upsert({
+        fixture_id:     f.fixture.id,
+        league_id:      LEAGUE_ID,
+        season:         SEASON,
+        round:          f.league.round,
+        datetime:       f.fixture.date,
+        status_short:   f.fixture.status.short,
         status_elapsed: f.fixture.status.elapsed,
-        goals_h: f.goals.home,
-        goals_a: f.goals.away,
-        ht_goals_h: f.score.halftime.home,
-        ht_goals_a: f.score.halftime.away,
-      }).eq('fixture_id', f.fixture.id)
+        venue_name:     f.fixture.venue?.name ?? null,
+        referee:        f.fixture.referee ?? null,
+        home_team_id:   f.teams.home.id,
+        home_team_name: f.teams.home.name,
+        home_team_logo: f.teams.home.logo ?? null,
+        away_team_id:   f.teams.away.id,
+        away_team_name: f.teams.away.name,
+        away_team_logo: f.teams.away.logo ?? null,
+        goals_h:        f.goals.home,
+        goals_a:        f.goals.away,
+        ht_goals_h:     f.score.halftime.home,
+        ht_goals_a:     f.score.halftime.away,
+        ft_goals_h:     f.score.fulltime.home,
+        ft_goals_a:     f.score.fulltime.away,
+        et_goals_h:     f.score.extratime.home,
+        et_goals_a:     f.score.extratime.away,
+        pen_goals_h:    f.score.penalty.home,
+        pen_goals_a:    f.score.penalty.away,
+      }, { onConflict: 'fixture_id', ignoreDuplicates: false })
+    ))
 
-      // Sync events
-      const events = await apiCall(`fixtures/events?fixture=${f.fixture.id}`)
-      if (events && events.length > 0) {
-        await supabase.from('match_events').delete().eq('fixture_id', f.fixture.id)
-        await supabase.from('match_events').insert(
-          events.map((e: any) => ({
-            fixture_id: f.fixture.id,
-            elapsed: e.time?.elapsed,
-            elapsed_extra: e.time?.extra,
-            team_name: e.team?.name,
-            player_name: e.player?.name,
-            assist_name: e.assist?.name,
-            event_type: e.type,
-            event_detail: e.detail,
-          }))
-        )
-      }
-
-      await new Promise(r => setTimeout(r, 100))
-
-      // Only sync lineups if not already in DB
-      const { data: existingLineups } = await supabase
-        .from('lineups')
-        .select('fixture_id')
-        .eq('fixture_id', f.fixture.id)
-        .limit(1)
-
-      if (!existingLineups || existingLineups.length === 0) {
-        const lineups = await apiCall(`fixtures/lineups?fixture=${f.fixture.id}`)
-        if (lineups && lineups.length > 0) {
-          for (const team of lineups) {
-            const teamName = team.team.name
-            const formation = team.formation ?? null
-            for (const p of team.startXI ?? []) {
-              await supabase.from('lineups').insert({
-                fixture_id: f.fixture.id,
-                team_name: teamName,
-                formation,
-                player_id: p.player.id,
-                player_name: p.player.name,
-                player_number: p.player.number,
-                is_substitute: false,
-              })
-            }
-            for (const p of team.substitutes ?? []) {
-              await supabase.from('lineups').insert({
-                fixture_id: f.fixture.id,
-                team_name: teamName,
-                formation,
-                player_id: p.player.id,
-                player_name: p.player.name,
-                player_number: p.player.number,
-                is_substitute: true,
-              })
-            }
-          }
-        }
-      }
-
-      await new Promise(r => setTimeout(r, 100))
-      synced++
-    }
-
-    return NextResponse.json({ message: 'In-play sync complete', synced })
+    return NextResponse.json({ message: 'Scores synced', synced: fixtures.length })
 
   } catch (err) {
-    console.error('In-play sync error:', err)
+    console.error('sync-scores error:', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }

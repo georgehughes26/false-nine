@@ -6,6 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const LEAGUE_ID = 39
 const SEASON = 2025
 const MIN_GAMES = 10
 
@@ -14,8 +15,8 @@ const TEAM_STATS = [
 ]
 
 const PLAYER_STATS = [
-  { key: 'goals',            col: 'goals' },
-  { key: 'assists',          col: 'assists' },
+  { key: 'goals',           col: 'goals' },
+  { key: 'assists',         col: 'assists' },
   { key: 'shots_on',        col: 'shots_on' },
   { key: 'shots_total',     col: 'shots_total' },
   { key: 'fouls_committed', col: 'fouls_committed' },
@@ -42,12 +43,14 @@ export async function GET(req: NextRequest) {
     const { data: homeMatches } = await supabase
       .from('matches')
       .select('home_team_name, goals_h, goals_a, home_shots_on, home_shots_total, home_corners, home_fouls, home_yellow_cards, home_red_cards, home_saves')
+      .eq('league_id', LEAGUE_ID)
       .eq('season', SEASON)
       .not('goals_h', 'is', null)
 
     const { data: awayMatches } = await supabase
       .from('matches')
       .select('away_team_name, goals_h, goals_a, away_shots_on, away_shots_total, away_corners, away_fouls, away_yellow_cards, away_red_cards, away_saves')
+      .eq('league_id', LEAGUE_ID)
       .eq('season', SEASON)
       .not('goals_h', 'is', null)
 
@@ -66,30 +69,30 @@ export async function GET(req: NextRequest) {
       ensureTeam(m.home_team_name)
       const t = teamMap[m.home_team_name]
       t.games++
-      t.goals     += m.goals_h ?? 0
-      t.conceded  += m.goals_a ?? 0
-      t.sot       += m.home_shots_on ?? 0
-      t.shots     += m.home_shots_total ?? 0
-      t.corners   += m.home_corners ?? 0
-      t.fouls     += m.home_fouls ?? 0
-      t.yellows   += m.home_yellow_cards ?? 0
-      t.reds      += m.home_red_cards ?? 0
-      t.saves     += m.home_saves ?? 0
+      t.goals    += m.goals_h ?? 0
+      t.conceded += m.goals_a ?? 0
+      t.sot      += m.home_shots_on ?? 0
+      t.shots    += m.home_shots_total ?? 0
+      t.corners  += m.home_corners ?? 0
+      t.fouls    += m.home_fouls ?? 0
+      t.yellows  += m.home_yellow_cards ?? 0
+      t.reds     += m.home_red_cards ?? 0
+      t.saves    += m.home_saves ?? 0
     }
 
     for (const m of am) {
       ensureTeam(m.away_team_name)
       const t = teamMap[m.away_team_name]
       t.games++
-      t.goals     += m.goals_a ?? 0
-      t.conceded  += m.goals_h ?? 0
-      t.sot       += m.away_shots_on ?? 0
-      t.shots     += m.away_shots_total ?? 0
-      t.corners   += m.away_corners ?? 0
-      t.fouls     += m.away_fouls ?? 0
-      t.yellows   += m.away_yellow_cards ?? 0
-      t.reds      += m.away_red_cards ?? 0
-      t.saves     += m.away_saves ?? 0
+      t.goals    += m.goals_a ?? 0
+      t.conceded += m.goals_h ?? 0
+      t.sot      += m.away_shots_on ?? 0
+      t.shots    += m.away_shots_total ?? 0
+      t.corners  += m.away_corners ?? 0
+      t.fouls    += m.away_fouls ?? 0
+      t.yellows  += m.away_yellow_cards ?? 0
+      t.reds     += m.away_red_cards ?? 0
+      t.saves    += m.away_saves ?? 0
     }
 
     const teamRankingRows: any[] = []
@@ -105,12 +108,12 @@ export async function GET(req: NextRequest) {
       for (const item of items) {
         const pgr = perGameRanked.find(r => r.name === item.name)
         teamRankingRows.push({
-          team_name: item.name,
-          season: SEASON,
+          team_name:      item.name,
+          season:         SEASON,
           stat,
           per_game_value: Math.round(item.perGameValue * 100) / 100,
-          per_game_rank: pgr?.rank ?? null,
-          updated_at: new Date().toISOString(),
+          per_game_rank:  pgr?.rank ?? null,
+          updated_at:     new Date().toISOString(),
         })
       }
     }
@@ -125,6 +128,7 @@ export async function GET(req: NextRequest) {
     const { data: players } = await supabase
       .from('players')
       .select('player_id, name, team_name, games, minutes, goals, assists, shots_on, shots_total, fouls_committed, fouls_drawn, yellow_cards, tackles_total')
+      .eq('league_id', LEAGUE_ID)
       .eq('season', SEASON)
       .gte('games', MIN_GAMES)
       .gt('minutes', 90)
@@ -133,11 +137,11 @@ export async function GET(req: NextRequest) {
 
     for (const ps of PLAYER_STATS) {
       const allItems = (players ?? []).map(p => ({
-        player_id: p.player_id,
+        player_id:   p.player_id,
         player_name: p.name,
-        team_name: p.team_name,
-        rawValue: p[ps.col as keyof typeof p] as number | null,
-        value: p.minutes > 0 ? ((p[ps.col as keyof typeof p] as number ?? 0) / p.minutes) * 90 : 0,
+        team_name:   p.team_name,
+        rawValue:    p[ps.col as keyof typeof p] as number | null,
+        value:       p.minutes > 0 ? ((p[ps.col as keyof typeof p] as number ?? 0) / p.minutes) * 90 : 0,
       }))
 
       const rankableItems = allItems.filter(i => i.rawValue !== null && i.rawValue > 0)
@@ -146,14 +150,14 @@ export async function GET(req: NextRequest) {
       for (const item of rankableItems) {
         const r = ranked.find(r => r.name === String(item.player_id))
         playerRankingRows.push({
-          player_id: item.player_id,
+          player_id:   item.player_id,
           player_name: item.player_name,
-          team_name: item.team_name,
-          season: SEASON,
-          stat: ps.key,
+          team_name:   item.team_name,
+          season:      SEASON,
+          stat:        ps.key,
           per90_value: Math.round(item.value * 100) / 100,
-          per90_rank: r?.rank ?? null,
-          updated_at: new Date().toISOString(),
+          per90_rank:  r?.rank ?? null,
+          updated_at:  new Date().toISOString(),
         })
       }
     }
@@ -168,11 +172,11 @@ export async function GET(req: NextRequest) {
     const { data: allMatches } = await supabase
       .from('matches')
       .select('referee, home_yellow_cards, away_yellow_cards, home_red_cards, away_red_cards, home_fouls, away_fouls')
+      .eq('league_id', LEAGUE_ID)
       .eq('season', SEASON)
       .not('goals_h', 'is', null)
       .not('referee', 'is', null)
 
-    // Key by last name to group A.Madley + Andy Madley together, keep longest name as display
     const refMap: Record<string, { games: number, yellows: number, reds: number, fouls: number, fullName: string }> = {}
 
     for (const m of allMatches ?? []) {
@@ -182,7 +186,6 @@ export async function GET(req: NextRequest) {
         refMap[lastName] = { games: 0, yellows: 0, reds: 0, fouls: 0, fullName: raw }
       }
       const r = refMap[lastName]
-      // Keep the longest/most complete name as display name
       if (raw.length > r.fullName.length) r.fullName = raw
       r.games++
       r.yellows += (m.home_yellow_cards ?? 0) + (m.away_yellow_cards ?? 0)
@@ -191,13 +194,12 @@ export async function GET(req: NextRequest) {
     }
 
     const qualifiedRefs = Object.entries(refMap)
-
     const refRankingRows: any[] = []
 
     for (const stat of REF_STATS) {
       const items = qualifiedRefs.map(([, data]) => ({
-        name: data.fullName,
-        perGameValue: data[stat as keyof typeof data] as number / data.games,
+        name:         data.fullName,
+        perGameValue: (data[stat as keyof typeof data] as number) / data.games,
       }))
 
       const perGameRanked = rank(items.map(i => ({ name: i.name, value: i.perGameValue })))
@@ -205,12 +207,12 @@ export async function GET(req: NextRequest) {
       for (const item of items) {
         const pgr = perGameRanked.find(r => r.name === item.name)
         refRankingRows.push({
-          referee_name: item.name,
-          season: SEASON,
+          referee_name:   item.name,
+          season:         SEASON,
           stat,
           per_game_value: Math.round(item.perGameValue * 100) / 100,
-          per_game_rank: pgr?.rank ?? null,
-          updated_at: new Date().toISOString(),
+          per_game_rank:  pgr?.rank ?? null,
+          updated_at:     new Date().toISOString(),
         })
       }
     }
@@ -222,14 +224,14 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      message: 'Rankings sync complete',
-      teamsProcessed: Object.keys(teamMap).length,
-      playersProcessed: (players ?? []).length,
+      message:           'Rankings sync complete',
+      teamsProcessed:    Object.keys(teamMap).length,
+      playersProcessed:  (players ?? []).length,
       refereesProcessed: qualifiedRefs.length,
     })
 
   } catch (err) {
-    console.error('Rankings sync error:', err)
+    console.error('sync-rankings error:', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
