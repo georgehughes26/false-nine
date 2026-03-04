@@ -27,10 +27,10 @@ interface PlayerRanking {
   per90_rank: number | null
 }
 
-function rankColor(rank: number | null, total: number): string {
-  if (rank === null) return '#2a3545'
-  if (rank <= Math.ceil(total * 0.1)) return '#00c864'   // top 10%... but for players we use fixed thresholds
-  return '#2a3545'
+interface LineupPlayer {
+  player_id: number
+  player_name: string
+  is_substitute: boolean
 }
 
 function teamRankColor(rank: number | null): string {
@@ -71,7 +71,7 @@ function PlayerRankLabel({ rank }: { rank: number | null }) {
   )
 }
 
-export default function SquadView({ match, homePlayers, awayPlayers, homeTeamStats, awayTeamStats, homeTeamRankings, awayTeamRankings, playerRankings, isPro }: {
+export default function SquadView({ match, homePlayers, awayPlayers, homeTeamStats, awayTeamStats, homeTeamRankings, awayTeamRankings, playerRankings, lineups, isPro }: {
   match: any
   homePlayers: any[]
   awayPlayers: any[]
@@ -80,16 +80,32 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
   homeTeamRankings: TeamRanking[]
   awayTeamRankings: TeamRanking[]
   playerRankings: PlayerRanking[]
+  lineups: LineupPlayer[]
   isPro: boolean
 }) {
   const [activeTab, setActiveTab] = useState<'home' | 'away'>('home')
   const [per90, setPer90] = useState(false)
 
-  const players = activeTab === 'home' ? homePlayers : awayPlayers
+  const allPlayers = activeTab === 'home' ? homePlayers : awayPlayers
   const teamName = activeTab === 'home' ? match.home_team_name : match.away_team_name
   const teamStats = activeTab === 'home' ? homeTeamStats : awayTeamStats
   const teamRankings = activeTab === 'home' ? homeTeamRankings : awayTeamRankings
-  const tackles = players.reduce((s: number, p: any) => s + (p.tackles_total ?? 0), 0)
+
+  // Filter by lineup if available
+  const teamLineups = lineups.filter(l =>
+    activeTab === 'home'
+      ? homePlayers.some(p => p.player_id === l.player_id)
+      : awayPlayers.some(p => p.player_id === l.player_id)
+  )
+  const hasLineups = teamLineups.length > 0
+  const starterIds = new Set(teamLineups.filter(l => !l.is_substitute).map(l => l.player_id))
+  const subIds = new Set(teamLineups.filter(l => l.is_substitute).map(l => l.player_id))
+
+  const starters = hasLineups ? allPlayers.filter(p => starterIds.has(p.player_id)) : allPlayers
+  const subs = hasLineups ? allPlayers.filter(p => subIds.has(p.player_id)) : []
+  const players = hasLineups ? [...starters, ...subs] : allPlayers
+
+  const tackles = allPlayers.reduce((s: number, p: any) => s + (p.tackles_total ?? 0), 0)
   const tacklesPerGame = teamStats && teamStats.games > 0 ? tackles / teamStats.games : 0
 
   const tRank = (stat: string): number | null => {
@@ -120,6 +136,63 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
     if (Number.isInteger(val) && !per90) return val.toString()
     return val.toFixed(2)
   }
+
+  const renderPlayer = (p: any) => (
+    <div key={p.player_id} className="player-card">
+      <div className="player-top">
+        <span className="player-name">{p.name}</span>
+        <span className="dot">·</span>
+        <span className="player-position">{p.position}</span>
+        <span className="player-games">{p.games ?? 0}G · {p.minutes ?? 0}mins</span>
+      </div>
+      <div className="stats-row">
+        <div className="stat">
+          <div className={`stat-value ${!per90 && p.goals > 0 ? 'highlight' : ''}`}>{fmt(calc(p.goals, p.minutes))}</div>
+          <div className="stat-label">Goals</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'goals')} />}
+        </div>
+        <div className="stat">
+          <div className={`stat-value ${!per90 && p.assists > 0 ? 'highlight' : ''}`}>{fmt(calc(p.assists, p.minutes))}</div>
+          <div className="stat-label">Ast</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'assists')} />}
+        </div>
+        <div className="stat">
+          <div className="stat-value">{fmt(calc(p.shots_on, p.minutes))}</div>
+          <div className="stat-label">SOT</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'shots_on')} />}
+        </div>
+        <div className="stat">
+          <div className="stat-value">{fmt(calc(p.shots_total, p.minutes))}</div>
+          <div className="stat-label">Shots</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'shots_total')} />}
+        </div>
+        <div className="stat">
+          <div className="stat-value">{fmt(calc(p.fouls_committed, p.minutes))}</div>
+          <div className="stat-label">Fouls C</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'fouls_committed')} />}
+        </div>
+        <div className="stat">
+          <div className="stat-value">{fmt(calc(p.fouls_drawn, p.minutes))}</div>
+          <div className="stat-label">Fouls W</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'fouls_drawn')} />}
+        </div>
+        <div className="stat">
+          <div className="stat-value">{fmt(calc(p.tackles_total, p.minutes))}</div>
+          <div className="stat-label">Tkl</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'tackles')} />}
+        </div>
+        <div className="stat">
+          <div className="stat-value yellow">{fmt(calc(p.yellow_cards, p.minutes))}</div>
+          <div className="stat-label">YC</div>
+          {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'yellow_cards')} />}
+        </div>
+        <div className="stat">
+          <div className="stat-value red">{fmt(calc(Number(p.red_cards), p.minutes))}</div>
+          <div className="stat-label">RC</div>
+        </div>
+      </div>
+    </div>
+  )
 
   const content = (
     <>
@@ -205,62 +278,20 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
         </div>
       )}
 
-      {players.map((p: any) => (
-        <div key={p.player_id} className="player-card">
-          <div className="player-top">
-            <span className="player-name">{p.name}</span>
-            <span className="dot">·</span>
-            <span className="player-position">{p.position}</span>
-            <span className="player-games">{p.games ?? 0}G · {p.minutes ?? 0}mins</span>
+      {starters.map(renderPlayer)}
+
+      {hasLineups && subs.length > 0 && (
+        <>
+          <div style={{
+            fontSize: '9px', fontWeight: 600, letterSpacing: '2px',
+            textTransform: 'uppercase', color: '#2a3545',
+            margin: '12px 0 8px', textAlign: 'center',
+          }}>
+            Substitutes
           </div>
-          <div className="stats-row">
-            <div className="stat">
-              <div className={`stat-value ${!per90 && p.goals > 0 ? 'highlight' : ''}`}>{fmt(calc(p.goals, p.minutes))}</div>
-              <div className="stat-label">Goals</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'goals')} />}
-            </div>
-            <div className="stat">
-              <div className={`stat-value ${!per90 && p.assists > 0 ? 'highlight' : ''}`}>{fmt(calc(p.assists, p.minutes))}</div>
-              <div className="stat-label">Ast</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'assists')} />}
-            </div>
-            <div className="stat">
-              <div className="stat-value">{fmt(calc(p.shots_on, p.minutes))}</div>
-              <div className="stat-label">SOT</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'shots_on')} />}
-            </div>
-            <div className="stat">
-              <div className="stat-value">{fmt(calc(p.shots_total, p.minutes))}</div>
-              <div className="stat-label">Shots</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'shots_total')} />}
-            </div>
-            <div className="stat">
-              <div className="stat-value">{fmt(calc(p.fouls_committed, p.minutes))}</div>
-              <div className="stat-label">Fouls C</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'fouls_committed')} />}
-            </div>
-            <div className="stat">
-              <div className="stat-value">{fmt(calc(p.fouls_drawn, p.minutes))}</div>
-              <div className="stat-label">Fouls W</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'fouls_drawn')} />}
-            </div>
-            <div className="stat">
-              <div className="stat-value">{fmt(calc(p.tackles_total, p.minutes))}</div>
-              <div className="stat-label">Tkl</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'tackles')} />}
-            </div>
-            <div className="stat">
-              <div className="stat-value yellow">{fmt(calc(p.yellow_cards, p.minutes))}</div>
-              <div className="stat-label">YC</div>
-              {per90 && <PlayerRankLabel rank={pRank(p.player_id, 'yellow_cards')} />}
-            </div>
-            <div className="stat">
-              <div className="stat-value red">{fmt(calc(Number(p.red_cards), p.minutes))}</div>
-              <div className="stat-label">RC</div>
-            </div>
-          </div>
-        </div>
-      ))}
+          {subs.map(renderPlayer)}
+        </>
+      )}
     </>
   )
 
@@ -305,7 +336,6 @@ export default function SquadView({ match, homePlayers, awayPlayers, homeTeamSta
         .stat-value.red { color: #ff5050; }
         .stat-label { font-size: 8px; color: #4a5568; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
       `}</style>
-
       <div className="squad-section">
         {isPro ? content : <ProLock>{content}</ProLock>}
       </div>

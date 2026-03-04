@@ -10,6 +10,74 @@ const SEASON = 2025
 const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
 const FINISHED_STATUSES = ['FT', 'AET', 'PEN']
 
+interface LineupPlayer {
+  team_name: string
+  formation: string | null
+  player_id: number
+  player_name: string
+  player_number: number
+  is_substitute: boolean
+}
+
+function LineupColumn({ players, subs, formation, side }: {
+  players: LineupPlayer[]
+  subs: LineupPlayer[]
+  formation: string | null
+  side: 'home' | 'away'
+}) {
+  const isAway = side === 'away'
+  return (
+    <div style={{ flex: 1 }}>
+      {formation && (
+        <div style={{
+          fontSize: '11px', fontWeight: 700, color: '#00c864',
+          letterSpacing: '1px', marginBottom: '8px',
+          textAlign: isAway ? 'right' : 'left',
+        }}>
+          {formation}
+        </div>
+      )}
+      <div style={{ marginBottom: '12px' }}>
+        {players.map((p, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            marginBottom: '4px', flexDirection: isAway ? 'row-reverse' : 'row',
+          }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#2a3545', width: '16px', textAlign: 'center', flexShrink: 0 }}>
+              {p.player_number}
+            </span>
+            <span style={{ fontSize: '11px', color: '#e8edf2', fontWeight: 500, textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
+              {p.player_name}
+            </span>
+          </div>
+        ))}
+      </div>
+      {subs.length > 0 && (
+        <>
+          <div style={{
+            fontSize: '8px', fontWeight: 600, letterSpacing: '2px',
+            textTransform: 'uppercase' as const, color: '#2a3545',
+            marginBottom: '6px', textAlign: isAway ? 'right' : 'left',
+          }}>Subs</div>
+          {subs.map((p, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              marginBottom: '4px', flexDirection: isAway ? 'row-reverse' : 'row',
+            }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#2a3545', width: '16px', textAlign: 'center', flexShrink: 0 }}>
+                {p.player_number}
+              </span>
+              <span style={{ fontSize: '11px', color: '#4a5568', textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
+                {p.player_name}
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
 async function getRefereeStats(refereeName: string | null) {
   if (!refereeName) return null
   const parts = refereeName.split(',')[0].trim().split(' ')
@@ -203,9 +271,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     isPlayed
       ? supabase.from('match_events').select('*').eq('fixture_id', matchId).order('elapsed', { ascending: true }).then(r => r.data)
       : Promise.resolve([]),
-    isPlayed
-      ? supabase.from('lineups').select('*').eq('fixture_id', matchId).then(r => r.data)
-      : Promise.resolve([]),
+    supabase.from('lineups').select('*').eq('fixture_id', matchId).then(r => r.data),
     supabase.from('teams').select('logo').eq('name', match.home_team_name).single().then(r => r.data),
     supabase.from('teams').select('logo').eq('name', match.away_team_name).single().then(r => r.data),
     getHomeStats(match.home_team_name),
@@ -219,13 +285,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const awayLogo = awayTeamData?.logo ?? null
 
   const lineupsConfirmed = !isPlayed
-    ? (await supabase
-        .from('lineups')
-        .select('player_id')
-        .eq('fixture_id', matchId)
-        .eq('is_substitute', false)
-        .limit(1)
-        .then(r => (r.data?.length ?? 0) > 0))
+    ? ((lineups ?? []).filter(l => !l.is_substitute).length > 0)
     : false
 
   const time = new Date(match.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -255,6 +315,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       ))}
     </div>
   )
+
+  const upcomingLineups = !isPlayed ? (lineups ?? []) : []
+  const hasUpcomingLineups = upcomingLineups.length > 0
 
   return (
     <>
@@ -437,6 +500,41 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           />
         )}
 
+        {!isPlayed && hasUpcomingLineups && (
+          <div style={{ padding: '0 24px', marginBottom: '8px' }}>
+            <div style={{
+              fontSize: '11px', fontWeight: 600, letterSpacing: '3px',
+              textTransform: 'uppercase', color: '#00c864',
+              marginBottom: '12px', paddingBottom: '8px',
+              borderBottom: '1px solid rgba(0,200,100,0.15)',
+            }}>Lineups</div>
+            <div style={{ display: 'flex', gap: '1px', background: '#1a2030', borderRadius: '12px', overflow: 'hidden' }}>
+              <div style={{ flex: 1, background: '#0e1318', padding: '14px 12px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', letterSpacing: '1px', marginBottom: '8px', textTransform: 'uppercase' }}>
+                  {match.home_team_name}
+                </div>
+                <LineupColumn
+                  players={upcomingLineups.filter(p => p.team_name === match.home_team_name && !p.is_substitute)}
+                  subs={upcomingLineups.filter(p => p.team_name === match.home_team_name && p.is_substitute)}
+                  formation={upcomingLineups.find(p => p.team_name === match.home_team_name)?.formation ?? null}
+                  side="home"
+                />
+              </div>
+              <div style={{ flex: 1, background: '#0e1318', padding: '14px 12px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', letterSpacing: '1px', marginBottom: '8px', textAlign: 'right', textTransform: 'uppercase' }}>
+                  {match.away_team_name}
+                </div>
+                <LineupColumn
+                  players={upcomingLineups.filter(p => p.team_name === match.away_team_name && !p.is_substitute)}
+                  subs={upcomingLineups.filter(p => p.team_name === match.away_team_name && p.is_substitute)}
+                  formation={upcomingLineups.find(p => p.team_name === match.away_team_name)?.formation ?? null}
+                  side="away"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {!isPlayed && (
           <SquadView
             match={match}
@@ -447,6 +545,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             homeTeamRankings={homeTeamRankings ?? []}
             awayTeamRankings={awayTeamRankings ?? []}
             playerRankings={playerRankings ?? []}
+            lineups={lineups ?? []}
             isPro={isPro}
           />
         )}
