@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
   try {
     const today = new Date().toISOString().split('T')[0]
 
-    // Fetch today's fixtures directly from API instead of relying on DB status
     const data = await apiCall(`fixtures?league=${LEAGUE_ID}&season=${SEASON}&date=${today}`)
 
     const inPlayStatuses = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
@@ -66,6 +65,47 @@ export async function GET(req: NextRequest) {
             event_detail: e.detail,
           }))
         )
+      }
+
+      await new Promise(r => setTimeout(r, 100))
+
+      // Only sync lineups if not already in DB
+      const { data: existingLineups } = await supabase
+        .from('lineups')
+        .select('fixture_id')
+        .eq('fixture_id', f.fixture.id)
+        .limit(1)
+
+      if (!existingLineups || existingLineups.length === 0) {
+        const lineups = await apiCall(`fixtures/lineups?fixture=${f.fixture.id}`)
+        if (lineups && lineups.length > 0) {
+          for (const team of lineups) {
+            const teamName = team.team.name
+            const formation = team.formation ?? null
+            for (const p of team.startXI ?? []) {
+              await supabase.from('lineups').insert({
+                fixture_id: f.fixture.id,
+                team_name: teamName,
+                formation,
+                player_id: p.player.id,
+                player_name: p.player.name,
+                player_number: p.player.number,
+                is_substitute: false,
+              })
+            }
+            for (const p of team.substitutes ?? []) {
+              await supabase.from('lineups').insert({
+                fixture_id: f.fixture.id,
+                team_name: teamName,
+                formation,
+                player_id: p.player.id,
+                player_name: p.player.name,
+                player_number: p.player.number,
+                is_substitute: true,
+              })
+            }
+          }
+        }
       }
 
       await new Promise(r => setTimeout(r, 100))

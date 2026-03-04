@@ -7,6 +7,9 @@ function parseGW(round: string | null): number {
   return m ? parseInt(m[1], 10) : 0
 }
 
+const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
+const FINISHED_STATUSES = ['FT', 'AET', 'PEN']
+
 export default async function Home() {
   const { data: matches, error } = await supabase
     .from('matches')
@@ -28,7 +31,11 @@ export default async function Home() {
   const currentGW = gwNumbers.find(gw => {
     const gwKey = Object.keys(grouped).find(k => parseGW(k) === gw)
     const gwMatches = gwKey ? grouped[gwKey] : []
-    return gwMatches.some(m => m.goals_h === null || m.goals_a === null)
+    return gwMatches.some(m =>
+      !m.status_short ||
+      IN_PLAY_STATUSES.includes(m.status_short) ||
+      !FINISHED_STATUSES.includes(m.status_short)
+    )
   }) ?? gwNumbers[gwNumbers.length - 1]
 
   const visibleGWs = gwNumbers.filter(gw => gw >= currentGW)
