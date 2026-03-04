@@ -9,7 +9,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/sync') ||
     pathname.startsWith('/api/waitlist') ||
     pathname.startsWith('/api/unlock') ||
-    pathname.startsWith('/coming-soon')
+    pathname.startsWith('/coming-soon') ||
+    pathname.startsWith('/api/sync')  // already covers sync-rankings
   ) {
     return NextResponse.next()
   }
