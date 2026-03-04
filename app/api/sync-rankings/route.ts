@@ -130,16 +130,19 @@ export async function GET(req: NextRequest) {
     const playerRankingRows: any[] = []
 
     for (const ps of PLAYER_STATS) {
-      const items = (players ?? []).map(p => ({
+      const allItems = (players ?? []).map(p => ({
         player_id: p.player_id,
         player_name: p.name,
         team_name: p.team_name,
+        rawValue: p[ps.col as keyof typeof p] as number | null,
         value: p.minutes > 0 ? ((p[ps.col as keyof typeof p] as number ?? 0) / p.minutes) * 90 : 0,
       }))
 
-      const ranked = rank(items.map(i => ({ name: String(i.player_id), value: i.value })))
+      // Only rank players who have actual data for this stat
+      const rankableItems = allItems.filter(i => i.rawValue !== null)
+      const ranked = rank(rankableItems.map(i => ({ name: String(i.player_id), value: i.value })))
 
-      for (const item of items) {
+      for (const item of rankableItems) {
         const r = ranked.find(r => r.name === String(item.player_id))
         playerRankingRows.push({
           player_id: item.player_id,
