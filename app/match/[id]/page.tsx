@@ -251,7 +251,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const isFinished = match.status_short !== null && FINISHED_STATUSES.includes(match.status_short)
   const isPlayed = isInPlay || isFinished
 
-  const refName = match.referee ? match.referee.split(',')[0].trim() : null
+  const refLastName = match.referee
+  ? match.referee.split(',')[0].trim().split(' ').pop() ?? null
+  : null
 
   const [
     homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats,
@@ -282,9 +284,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     supabase.from('team_rankings').select('*').eq('team_name', match.home_team_name).eq('season', SEASON).then(r => r.data),
     supabase.from('team_rankings').select('*').eq('team_name', match.away_team_name).eq('season', SEASON).then(r => r.data),
     supabase.from('player_rankings').select('*').eq('season', SEASON).in('team_name', [match.home_team_name, match.away_team_name]).then(r => r.data),
-    refName
-      ? supabase.from('referee_rankings').select('*').eq('referee_name', refName).eq('season', SEASON).then(r => r.data)
-      : Promise.resolve([]),
+    refLastName
+    ? supabase.from('referee_rankings').select('*').ilike('referee_name', `%${refLastName}%`).eq('season', SEASON).then(r => r.data)
+    : Promise.resolve([]),
   ])
 
   const homeLogo = homeTeamData?.logo ?? null
@@ -482,7 +484,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
               <div className="ref-card">
                 <div className="ref-top">
                   <span className="ref-label">Ref</span>
-                  <span className="ref-name">{match.referee}</span>
+                  <span className="ref-name">
+  {(refRankings ?? []).length > 0 ? (refRankings as any[])[0].referee_name : match.referee?.split(',')[0].trim()}
+</span>
                 </div>
                 <div className="ref-stats">
                   <div className="ref-stat">
