@@ -32,7 +32,7 @@ export default function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: 'https://false-nine.vercel.app/auth/callback'
+          emailRedirectTo: 'https://falsenineapp.com/auth/callback'
         }
       })
       if (error) setError(error.message)

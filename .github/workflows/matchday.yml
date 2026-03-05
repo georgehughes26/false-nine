@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Sync scores
         run: |
-          curl -sf -X GET https://false-nine.vercel.app/api/sync-scores \
+          curl -sf -X GET https://falsenineapp.com/api/sync-scores \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
   sync-events:
@@ -20,5 +20,5 @@ jobs:
     steps:
       - name: Sync events and stats
         run: |
-          curl -sf -X GET https://false-nine.vercel.app/api/sync-events \
+          curl -sf -X GET https://falsenineapp.com/api/sync-events \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

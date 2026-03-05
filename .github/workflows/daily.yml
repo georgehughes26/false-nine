@@ -45,7 +45,7 @@ jobs:
         run: |
           for gw in $(seq 1 19); do
             echo "Syncing GW$gw..."
-            curl -f --max-time 30 -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
+            curl -f --max-time 30 -X GET "https://falsenineapp.com/api/sync-full-matches?gw=$gw" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
             echo ""
           done
@@ -54,12 +54,12 @@ jobs:
         run: |
           for gw in $(seq 20 38); do
             echo "Syncing GW$gw..."
-            curl -f --max-time 30 -X GET "https://false-nine.vercel.app/api/sync-full-matches?gw=$gw" \
+            curl -f --max-time 30 -X GET "https://falsenineapp.com/api/sync-full-matches?gw=$gw" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
             echo ""
           done
 
       - name: Sync rankings
         run: |
-          curl -f --max-time 30 -X GET https://false-nine.vercel.app/api/sync-rankings \
+          curl -f --max-time 30 -X GET https://falsenineapp.com/api/sync-rankings \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
