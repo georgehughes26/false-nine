@@ -1,5 +1,5 @@
 import ComingSoonPage from '@/components/ComingSoonPage'
 
-export default function LMSPage() {
+export default function FPLPage() {
   return <ComingSoonPage />
 }
