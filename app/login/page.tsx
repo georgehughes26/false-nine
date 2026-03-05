@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
 
 const supabase = createBrowserClient(
-  'https://wuripncsrdpezpoxhvcb.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cmlwbmNzcmRwZXpwb3hodmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzIyNjMsImV4cCI6MjA4NzYwODI2M30.nvymXC2Z9wpCZJ6vDJ1S1nR404s62uJgu-uure2NTj0'
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -28,7 +28,13 @@ export default function LoginPage() {
       if (error) setError(error.message)
       else router.push('/')
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: 'https://false-nine.vercel.app/auth/callback'
+        }
+      })
       if (error) setError(error.message)
       else setSuccess('Check your email to confirm your account.')
     }
