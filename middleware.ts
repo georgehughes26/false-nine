@@ -4,29 +4,22 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ── Always allow these through ─────────────────────────────────────────
+  // Always allow these through
   if (
-    pathname.startsWith('/api/sync') ||
-    pathname.startsWith('/api/waitlist') ||
-    pathname.startsWith('/api/unlock') ||
+    pathname.startsWith('/api/') ||
     pathname.startsWith('/coming-soon') ||
-    pathname.startsWith('/api/sync')  // already covers sync-rankings
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth/')
   ) {
     return NextResponse.next()
   }
 
-  // ── Check app password cookie ──────────────────────────────────────────
-  const unlocked = request.cookies.get('app_unlocked')?.value === 'true'
-  if (!unlocked) {
-    return NextResponse.redirect(new URL('/coming-soon', request.url))
-  }
-
-  // ── Supabase auth check ────────────────────────────────────────────────
+  // Supabase auth check
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    'https://wuripncsrdpezpoxhvcb.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cmlwbmNzcmRwZXpwb3hodmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzIyNjMsImV4cCI6MjA4NzYwODI2M30.nvymXC2Z9wpCZJ6vDJ1S1nR404s62uJgu-uure2NTj0',
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
@@ -43,7 +36,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && !pathname.startsWith('/login')) {
+  if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
