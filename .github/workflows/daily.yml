@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: '*/30 * * * *'
     - cron: '0 2 * * *'
-    - cron: '0 23 * * *'
   workflow_dispatch:
 
 jobs:
@@ -32,9 +31,7 @@ jobs:
 
   sync-full:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.schedule == '0 23 * * *'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Sync meta (teams, standings, fixtures)
         run: |
@@ -52,7 +49,7 @@ jobs:
 
       - name: Sync rankings
         run: |
-          curl -f --max-time 30 -X GET https://falsenineapp.com/api/sync-rankings \
+          curl -f --max-time 30 -X GET https://falsenineapp.com/api/sync-full-matches \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
       - name: Sync predictions
