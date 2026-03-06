@@ -371,9 +371,10 @@ async function syncPlayerPredictions() {
 
   const { data: upcomingMatches } = await supabase
     .from('matches')
-    .select('fixture_id, home_team_id, away_team_id, home_team_name, away_team_name')
+    .select('fixture_id, league_id, home_team_id, away_team_id, home_team_name, away_team_name')
     .is('goals_h', null)
     .is('goals_a', null)
+    .in('league_id', [39, 40])
 
   if (!upcomingMatches || upcomingMatches.length === 0) {
     console.log('No upcoming matches found')
@@ -383,17 +384,16 @@ async function syncPlayerPredictions() {
   console.log(`  → Found ${upcomingMatches.length} upcoming matches`)
 
   const categories = [
-    { key: 'shots_on_target', stat: 'shots_on',       label: 'Shots on Target' },
-    { key: 'shots',           stat: 'shots_total',    label: 'Shots' },
-    { key: 'bookings',        stat: 'yellow_cards',   label: 'Bookings' },
-    { key: 'fouls_committed', stat: 'fouls_committed',label: 'Fouls Committed' },
-    { key: 'fouls_won',       stat: 'fouls_drawn',    label: 'Fouls Won' },
+    { key: 'shots_on_target', stat: 'shots_on',        label: 'Shots on Target' },
+    { key: 'shots',           stat: 'shots_total',     label: 'Shots' },
+    { key: 'bookings',        stat: 'yellow_cards',    label: 'Bookings' },
+    { key: 'fouls_committed', stat: 'fouls_committed', label: 'Fouls Committed' },
+    { key: 'fouls_won',       stat: 'fouls_drawn',     label: 'Fouls Won' },
   ]
 
   let synced = 0
 
   for (const match of upcomingMatches) {
-    // Check if lineups exist for this fixture
     const { data: lineupRows } = await supabase
       .from('lineups')
       .select('player_id')
@@ -403,25 +403,22 @@ async function syncPlayerPredictions() {
     const lineupsConfirmed = lineupRows && lineupRows.length > 0
     const confirmedPlayerIds = lineupsConfirmed ? lineupRows.map(l => l.player_id) : null
 
-    // Get players for both teams
     let query = supabase
       .from('players')
       .select('player_id, name, team_id, team_name, minutes, shots_on, shots_total, yellow_cards, fouls_committed, fouls_drawn')
       .in('team_id', [match.home_team_id, match.away_team_id])
+      .eq('league_id', match.league_id)
       .eq('season', SEASON)
 
     if (lineupsConfirmed) {
-      // Only include confirmed starters
       query = query.in('player_id', confirmedPlayerIds)
     } else {
-      // Fall back to all players with enough minutes
       query = query.gt('minutes', 450)
     }
 
     const { data: players } = await query
     if (!players || players.length === 0) continue
 
-    // Delete existing predictions for this fixture
     await supabase.from('player_predictions').delete().eq('fixture_id', match.fixture_id)
 
     const rows = []
@@ -438,15 +435,15 @@ async function syncPlayerPredictions() {
 
       ranked.forEach((p, i) => {
         rows.push({
-          fixture_id: match.fixture_id,
-          category: cat.key,
-          rank: i + 1,
-          player_id: p.player_id,
-          player_name: p.name,
-          team_id: p.team_id,
-          team_name: p.team_name,
-          stat_value: p[cat.stat],
-          per90_value: Math.round(p.per90 * 100) / 100,
+          fixture_id:        match.fixture_id,
+          category:          cat.key,
+          rank:              i + 1,
+          player_id:         p.player_id,
+          player_name:       p.name,
+          team_id:           p.team_id,
+          team_name:         p.team_name,
+          stat_value:        p[cat.stat],
+          per90_value:       Math.round(p.per90 * 100) / 100,
           lineups_confirmed: lineupsConfirmed,
         })
       })
@@ -536,15 +533,15 @@ async function syncLineups() {
 
 async function run() {
   console.log('🚀 Starting False Nine sync — Premier League 2025/26...')
-  await syncLeague()
-  await syncTeams()
-  await syncFixtures()
-  await syncStandings()
-  await syncPlayers()
-  await syncMatchStats()
-  await syncMatchEvents()
+  //await syncLeague()
+  //await syncTeams()
+  //await syncFixtures()
+  //await syncStandings()
+  //await syncPlayers()
+  //await syncMatchStats()
+  //await syncMatchEvents()
   await syncPlayerPredictions()
-  await syncLineups()
+  //await syncLineups()
   console.log('\n✅ Sync complete!')
 }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const API_KEY = process.env.API_FOOTBALL_KEY!
-const LEAGUE_ID = 39
+const LEAGUE_IDS = [39, 40]
 const SEASON = 2025
 const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
 const FINISHED_STATUSES = ['FT', 'AET', 'PEN']
@@ -93,7 +93,7 @@ async function syncEvents(fixtureId: number) {
   )
 }
 
-async function syncPlayerStats(fixtureId: number) {
+async function syncPlayerStats(fixtureId: number, leagueId: number) {
   const data = await apiFetch(`fixtures/players?fixture=${fixtureId}`)
   const teams = data.response ?? []
 
@@ -104,7 +104,7 @@ async function syncPlayerStats(fixtureId: number) {
 
       await supabase.from('players').upsert({
         player_id:       p.player.id,
-        league_id:       LEAGUE_ID,
+        league_id:       leagueId,
         team_id:         team.team.id,
         team_name:       team.team.name,
         season:          SEASON,
@@ -121,7 +121,7 @@ async function syncPlayerStats(fixtureId: number) {
         tackles_total:   s.tackles?.total ?? 0,
         rating:          parseFloat(s.games?.rating ?? '0') || null,
         position:        s.games?.position ?? null,
-      }, { onConflict: 'player_id,season' })
+      }, { onConflict: 'player_id,league_id,season' })
     }
   }
 }
@@ -137,8 +137,8 @@ export async function GET(req: NextRequest) {
 
     const { data: todayMatches } = await supabase
       .from('matches')
-      .select('fixture_id, status_short')
-      .eq('league_id', LEAGUE_ID)
+      .select('fixture_id, status_short, league_id')
+      .in('league_id', LEAGUE_IDS)
       .eq('season', SEASON)
       .gte('datetime', `${today}T00:00:00`)
       .lte('datetime', `${today}T23:59:59`)
@@ -166,7 +166,7 @@ export async function GET(req: NextRequest) {
       eventsCount++
 
       if (isFinished) {
-        await syncPlayerStats(match.fixture_id)
+        await syncPlayerStats(match.fixture_id, match.league_id)
         playerStatsCount++
       }
     }

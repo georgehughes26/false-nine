@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const API_KEY = process.env.API_FOOTBALL_KEY!
-const LEAGUE_ID = 39
+const LEAGUE_IDS = [39, 40]
 const SEASON = 2025
 
 const supabase = createClient(
@@ -17,14 +17,14 @@ async function apiFetch(path: string) {
   return res.json()
 }
 
-async function syncTeams() {
-  const data = await apiFetch(`teams?league=${LEAGUE_ID}&season=${SEASON}`)
+async function syncTeams(leagueId: number) {
+  const data = await apiFetch(`teams?league=${leagueId}&season=${SEASON}`)
   const teams = data.response ?? []
 
   await Promise.all(teams.map((t: any) =>
     supabase.from('teams').upsert({
       team_id:        t.team.id,
-      league_id:      LEAGUE_ID,
+      league_id:      leagueId,
       season:         SEASON,
       name:           t.team.name,
       code:           t.team.code ?? null,
@@ -41,13 +41,13 @@ async function syncTeams() {
   return teams.length
 }
 
-async function syncStandings() {
-  const data = await apiFetch(`standings?league=${LEAGUE_ID}&season=${SEASON}`)
+async function syncStandings(leagueId: number) {
+  const data = await apiFetch(`standings?league=${leagueId}&season=${SEASON}`)
   const standings = data.response?.[0]?.league?.standings?.[0] ?? []
 
   await Promise.all(standings.map((s: any) =>
     supabase.from('standings').upsert({
-      league_id:          LEAGUE_ID,
+      league_id:          leagueId,
       season:             SEASON,
       team_id:            s.team.id,
       team_name:          s.team.name,
@@ -82,8 +82,8 @@ async function syncStandings() {
   return standings.length
 }
 
-async function syncAllFixtures() {
-  const data = await apiFetch(`fixtures?league=${LEAGUE_ID}&season=${SEASON}`)
+async function syncAllFixtures(leagueId: number) {
+  const data = await apiFetch(`fixtures?league=${leagueId}&season=${SEASON}`)
   const fixtures = data.response ?? []
 
   for (let i = 0; i < fixtures.length; i += 50) {
@@ -91,7 +91,7 @@ async function syncAllFixtures() {
     await Promise.all(chunk.map((f: any) =>
       supabase.from('matches').upsert({
         fixture_id:     f.fixture.id,
-        league_id:      LEAGUE_ID,
+        league_id:      leagueId,
         season:         SEASON,
         round:          f.league.round,
         datetime:       f.fixture.date,
@@ -129,9 +129,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const teamsCount = await syncTeams()
-    const standingsCount = await syncStandings()
-    const fixturesCount = await syncAllFixtures()
+    let teamsCount = 0
+    let standingsCount = 0
+    let fixturesCount = 0
+
+    for (const leagueId of LEAGUE_IDS) {
+      teamsCount    += await syncTeams(leagueId)
+      standingsCount += await syncStandings(leagueId)
+      fixturesCount  += await syncAllFixtures(leagueId)
+    }
 
     return NextResponse.json({
       message:   'Meta sync complete',

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const API_KEY = process.env.API_FOOTBALL_KEY!
-const LEAGUE_ID = 39
+const LEAGUE_IDS = [39, 40]
 const SEASON = 2025
 
 const supabase = createClient(
@@ -17,12 +17,12 @@ async function apiFetch(path: string) {
   return res.json()
 }
 
-async function syncUpcomingFixtures() {
+async function syncUpcomingFixtures(leagueId: number) {
   const now = new Date()
   const from = now.toISOString().split('T')[0]
   const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-  const data = await apiFetch(`fixtures?league=${LEAGUE_ID}&season=${SEASON}&from=${from}&to=${to}&status=NS`)
+  const data = await apiFetch(`fixtures?league=${leagueId}&season=${SEASON}&from=${from}&to=${to}&status=NS`)
   const fixtures = data.response ?? []
 
   if (fixtures.length === 0) return 0
@@ -30,7 +30,7 @@ async function syncUpcomingFixtures() {
   await Promise.all(fixtures.map((f: any) =>
     supabase.from('matches').upsert({
       fixture_id:     f.fixture.id,
-      league_id:      LEAGUE_ID,
+      league_id:      leagueId,
       season:         SEASON,
       round:          f.league.round,
       datetime:       f.fixture.date,
@@ -75,7 +75,6 @@ async function syncLineup(fixtureId: number): Promise<boolean> {
         is_substitute: false,
       })
     }
-
     for (const p of team.substitutes ?? []) {
       rows.push({
         fixture_id:    fixtureId,
@@ -109,12 +108,15 @@ export async function GET(req: NextRequest) {
     const now = new Date()
     const today = now.toISOString().split('T')[0]
 
-    const upcomingCount = await syncUpcomingFixtures()
+    let upcomingCount = 0
+    for (const leagueId of LEAGUE_IDS) {
+      upcomingCount += await syncUpcomingFixtures(leagueId)
+    }
 
     const { data: todayMatches } = await supabase
       .from('matches')
       .select('fixture_id, datetime, status_short')
-      .eq('league_id', LEAGUE_ID)
+      .in('league_id', LEAGUE_IDS)
       .eq('season', SEASON)
       .eq('status_short', 'NS')
       .gte('datetime', `${today}T00:00:00`)

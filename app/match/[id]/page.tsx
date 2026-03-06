@@ -262,8 +262,8 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     homeMatchStats, awayMatchStats, homeTeamRankings, awayTeamRankings,
     playerRankings, refRankings
   ] = await Promise.all([
-    supabase.from('players').select('*').eq('team_name', match.home_team_name).order('games', { ascending: false }).then(r => r.data),
-    supabase.from('players').select('*').eq('team_name', match.away_team_name).order('games', { ascending: false }).then(r => r.data),
+    supabase.from('players').select('*').eq('team_name', match.home_team_name).eq('league_id', match.league_id).eq('season', SEASON).order('games', { ascending: false }).then(r => r.data),
+    supabase.from('players').select('*').eq('team_name', match.away_team_name).eq('league_id', match.league_id).eq('season', SEASON).order('games', { ascending: false }).then(r => r.data),
     getTeamForm(match.home_team_name),
     getTeamForm(match.away_team_name),
     getH2H(match.home_team_name, match.away_team_name),
@@ -281,9 +281,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     supabase.from('teams').select('logo').eq('name', match.away_team_name).single().then(r => r.data),
     getHomeStats(match.home_team_name),
     getAwayStats(match.away_team_name),
-    supabase.from('team_rankings').select('*').eq('team_name', match.home_team_name).eq('season', SEASON).then(r => r.data),
-    supabase.from('team_rankings').select('*').eq('team_name', match.away_team_name).eq('season', SEASON).then(r => r.data),
-    supabase.from('player_rankings').select('*').eq('season', SEASON).in('team_name', [match.home_team_name, match.away_team_name]).then(r => r.data),
+    supabase.from('team_rankings').select('*').eq('team_name', match.home_team_name).eq('league_id', match.league_id).eq('season', SEASON).then(r => r.data),
+    supabase.from('team_rankings').select('*').eq('team_name', match.away_team_name).eq('league_id', match.league_id).eq('season', SEASON).then(r => r.data),
+    supabase.from('player_rankings').select('*').eq('season', SEASON).eq('league_id', match.league_id).in('team_name', [match.home_team_name, match.away_team_name]).then(r => r.data),
     refLastName
     ? supabase.from('referee_rankings').select('*').ilike('referee_name', `%${refLastName}%`).eq('season', SEASON).then(r => r.data)
     : Promise.resolve([]),

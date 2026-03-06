@@ -10,6 +10,8 @@ interface PlayerPrediction {
   category: string
   stat_value: number
   per90_value: number
+  in_lineup: boolean | null
+  lineups_confirmed: boolean
 }
 
 interface SeasonStats {
@@ -53,32 +55,18 @@ function calcExpectedGoals(
   form: FormResult[]
 ): number {
   if (matchStats.length === 0) return side === 'home' ? 1.3 : 1.0
-
-  // Raw goals avg from this side (home team at home, away team away)
   const goalsScored = matchStats.map(m => side === 'home' ? (m.goals_h ?? 0) : (m.goals_a ?? 0))
   const rawAvg = goalsScored.reduce((s, g) => s + g, 0) / goalsScored.length
-
-  // xG avg from this side
   const xgValues = matchStats.map(m => side === 'home' ? (m.home_xg ?? null) : (m.away_xg ?? null)).filter(x => x !== null) as number[]
   const xgAvg = xgValues.length > 0 ? xgValues.reduce((s, x) => s + x, 0) / xgValues.length : rawAvg
-
-  // Blend goals and xG 50/50
   const blended = (rawAvg + xgAvg) / 2
-
-  // Adjust for opponent's defensive weakness/strength
-  // league average conceded is ~1.15 per game, so we ratio against that
   const leagueAvgConceded = 1.15
   const defenceFactor = opponentConcededPerGame / leagueAvgConceded
   const defenceAdjusted = blended * defenceFactor
-
-  // Form factor — weight last 5 results, W=1.1, D=1.0, L=0.9
   const formMultiplier = form.length > 0
     ? form.reduce((s, f) => s + (f.result === 'W' ? 1.1 : f.result === 'D' ? 1.0 : 0.9), 0) / form.length
     : 1.0
-
-  // Home advantage
   const homeAdvantage = side === 'home' ? 1.15 : 1.0
-
   return Math.max(0.1, defenceAdjusted * formMultiplier * homeAdvantage)
 }
 
@@ -180,7 +168,17 @@ function PlayerCard({ prediction, statLabel, rank }: {
   )
 }
 
-export default function Predictions({ playerPredictions, homeSeasonStats, awaySeasonStats, homeForm, awayForm, homeMatchStats, awayMatchStats, lineupsConfirmed, isPro }: {
+export default function Predictions({
+  playerPredictions,
+  homeSeasonStats,
+  awaySeasonStats,
+  homeForm,
+  awayForm,
+  homeMatchStats,
+  awayMatchStats,
+  lineupsConfirmed,
+  isPro,
+}: {
   playerPredictions: PlayerPrediction[]
   homeSeasonStats: SeasonStats | null
   awaySeasonStats: SeasonStats | null
@@ -190,7 +188,7 @@ export default function Predictions({ playerPredictions, homeSeasonStats, awaySe
   awayMatchStats: MatchStat[]
   lineupsConfirmed: boolean
   isPro: boolean
-}){
+}) {
   const homeConcededPerGame = homeSeasonStats?.concededPerGame ?? 1.15
   const awayConcededPerGame = awaySeasonStats?.concededPerGame ?? 1.15
 
@@ -208,10 +206,18 @@ export default function Predictions({ playerPredictions, homeSeasonStats, awaySe
   const over25 = calcOverUnder(homeExpected, awayExpected, 2.5)
   const over35 = calcOverUnder(homeExpected, awayExpected, 3.5)
 
-  const getCategory = (cat: string) => {
-    const filtered = playerPredictions.filter(p => p.category === cat).sort((a, b) => a.rank - b.rank)
-    while (filtered.length < 3) filtered.push(null as any)
-    return filtered.slice(0, 3)
+  const getCategory = (cat: string): (PlayerPrediction | null)[] => {
+    const all = playerPredictions.filter(p => p.category === cat)
+
+    // If lineups confirmed — only show starters, re-ranked by per90
+    // If not confirmed — show everyone ranked by per90 (full squad)
+    const pool = lineupsConfirmed
+      ? all.filter(p => p.in_lineup === true).sort((a, b) => a.rank - b.rank)
+      : all.sort((a, b) => a.rank - b.rank)
+
+    const result: (PlayerPrediction | null)[] = pool.slice(0, 3)
+    while (result.length < 3) result.push(null)
+    return result
   }
 
   const topShotsOn     = getCategory('shots_on_target')
@@ -303,41 +309,59 @@ export default function Predictions({ playerPredictions, homeSeasonStats, awaySe
 
         <div className="divider" />
 
-<div className="pred-title">Player Picks</div>
+        <div className="pred-title">Player Picks</div>
 
-{!lineupsConfirmed && (
-  <div style={{
-    background: 'rgba(255,200,0,0.08)',
-    border: '1px solid rgba(255,200,0,0.2)',
-    borderRadius: '8px',
-    padding: '8px 12px',
-    marginBottom: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  }}>
-    <span style={{ fontSize: '13px' }}>⏳</span>
-    <span style={{ fontSize: '11px', color: '#ffc800', fontWeight: 500, lineHeight: 1.3 }}>
-      Based on season stats — will update automatically when lineups are confirmed
-    </span>
-  </div>
-)}
+        {!lineupsConfirmed && (
+          <div style={{
+            background: 'rgba(255,200,0,0.08)',
+            border: '1px solid rgba(255,200,0,0.2)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <span style={{ fontSize: '13px' }}>⏳</span>
+            <span style={{ fontSize: '11px', color: '#ffc800', fontWeight: 500, lineHeight: 1.3 }}>
+              Based on season stats — will update automatically when lineups are confirmed
+            </span>
+          </div>
+        )}
 
-{!hasPlayerData && <div className="no-data-note">Player stats coming soon</div>}
+        {lineupsConfirmed && (
+          <div style={{
+            background: 'rgba(0,200,100,0.08)',
+            border: '1px solid rgba(0,200,100,0.2)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <span style={{ fontSize: '13px' }}>✅</span>
+            <span style={{ fontSize: '11px', color: '#00c864', fontWeight: 500, lineHeight: 1.3 }}>
+              Lineups confirmed — picks based on today's starters
+            </span>
+          </div>
+        )}
 
-<div className="pred-subtitle">Most Shots on Target</div>
-{playerCards(topShotsOn, 'Shots on target').slice(0, 1)}
-{isPro
-  ? playerCards(topShotsOn, 'Shots on target').slice(1)
-  : <ProLock>{playerCards(topShotsOn, 'Shots on target').slice(1)}</ProLock>
-}
+        {!hasPlayerData && <div className="no-data-note">Player stats coming soon</div>}
 
-<div className="pred-subtitle">Most Shots</div>
-{playerCards(topShots, 'Shots').slice(0, 1)}
-{isPro
-  ? playerCards(topShots, 'Shots').slice(1)
-  : <ProLock>{playerCards(topShots, 'Shots').slice(1)}</ProLock>
-}
+        <div className="pred-subtitle">Most Shots on Target</div>
+        {playerCards(topShotsOn, 'Shots on target').slice(0, 1)}
+        {isPro
+          ? playerCards(topShotsOn, 'Shots on target').slice(1)
+          : <ProLock>{playerCards(topShotsOn, 'Shots on target').slice(1)}</ProLock>
+        }
+
+        <div className="pred-subtitle">Most Shots</div>
+        {playerCards(topShots, 'Shots').slice(0, 1)}
+        {isPro
+          ? playerCards(topShots, 'Shots').slice(1)
+          : <ProLock>{playerCards(topShots, 'Shots').slice(1)}</ProLock>
+        }
 
         <div className="pred-subtitle">Most Likely to be Booked</div>
         {playerCards(topYellows, 'Yellow cards').slice(0, 1)}
