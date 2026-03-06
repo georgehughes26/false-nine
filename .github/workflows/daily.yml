@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Sync lineups and upcoming fixtures
         run: |
-          curl -sf -X GET https://false-nine.vercel.app/api/sync-lineups \
+          curl -sf -X GET https://falsenineapp.com/api/sync-lineups \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
   sync-rankings:
@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Sync rankings
         run: |
-          curl -sf -X GET https://false-nine.vercel.app/api/sync-rankings \
+          curl -sf -X GET https://falsenineapp.com/api/sync-rankings \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
   sync-full:
@@ -38,22 +38,13 @@ jobs:
     steps:
       - name: Sync meta (teams, standings, fixtures)
         run: |
-          curl -f --max-time 30 -X GET https://false-nine.vercel.app/api/sync-full-meta \
+          curl -f --max-time 30 -X GET https://falsenineapp.com/api/sync-full-meta \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
-      - name: Sync match data GW1-GW19
+      - name: Sync match data rounds 1-46
         run: |
-          for gw in $(seq 1 19); do
-            echo "Syncing GW$gw..."
-            curl -f --max-time 30 -X GET "https://falsenineapp.com/api/sync-full-matches?gw=$gw" \
-              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-            echo ""
-          done
-
-      - name: Sync match data GW20-GW38
-        run: |
-          for gw in $(seq 20 38); do
-            echo "Syncing GW$gw..."
+          for gw in $(seq 1 46); do
+            echo "Syncing round $gw..."
             curl -f --max-time 30 -X GET "https://falsenineapp.com/api/sync-full-matches?gw=$gw" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
             echo ""
@@ -62,4 +53,9 @@ jobs:
       - name: Sync rankings
         run: |
           curl -f --max-time 30 -X GET https://falsenineapp.com/api/sync-rankings \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+      - name: Sync predictions
+        run: |
+          curl -f --max-time 30 -X GET https://falsenineapp.com/api/sync-predictions \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
