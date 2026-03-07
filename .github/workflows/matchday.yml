@@ -11,8 +11,9 @@ jobs:
     steps:
       - name: Sync scores
         run: |
-          curl -sf -X GET https://falsenineapp.com/api/sync-scores \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          curl -f -X GET https://falsenineapp.com/api/sync-scores \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3
 
   sync-events:
     runs-on: ubuntu-latest
@@ -20,5 +21,26 @@ jobs:
     steps:
       - name: Sync events and stats
         run: |
-          curl -sf -X GET https://falsenineapp.com/api/sync-events \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          curl -f -X GET https://falsenineapp.com/api/sync-events \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3
+
+  sync-lineups:
+    runs-on: ubuntu-latest
+    needs: sync-scores
+    steps:
+      - name: Sync lineups
+        run: |
+          curl -f -X GET https://falsenineapp.com/api/sync-lineups \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3
+
+  sync-predictions:
+    runs-on: ubuntu-latest
+    needs: sync-lineups
+    steps:
+      - name: Sync predictions
+        run: |
+          curl -f -X GET https://falsenineapp.com/api/sync-predictions \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3

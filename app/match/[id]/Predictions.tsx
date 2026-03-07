@@ -209,11 +209,16 @@ export default function Predictions({
   const getCategory = (cat: string): (PlayerPrediction | null)[] => {
     const all = playerPredictions.filter(p => p.category === cat)
 
-    // If lineups confirmed — only show starters, re-ranked by per90
-    // If not confirmed — show everyone ranked by per90 (full squad)
-    const pool = lineupsConfirmed
-      ? all.filter(p => p.in_lineup === true).sort((a, b) => a.rank - b.rank)
-      : all.sort((a, b) => a.rank - b.rank)
+    let pool: PlayerPrediction[]
+    if (lineupsConfirmed) {
+      const starters = all.filter(p => p.in_lineup === true)
+      // Fall back to full squad if in_lineup wasn't set (stale sync)
+      pool = starters.length > 0
+        ? starters.sort((a, b) => b.per90_value - a.per90_value)
+        : all.sort((a, b) => b.per90_value - a.per90_value)
+    } else {
+      pool = all.sort((a, b) => b.per90_value - a.per90_value)
+    }
 
     const result: (PlayerPrediction | null)[] = pool.slice(0, 3)
     while (result.length < 3) result.push(null)

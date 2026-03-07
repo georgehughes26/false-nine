@@ -50,18 +50,20 @@ async function syncUpcomingFixtures(leagueId: number) {
   return fixtures.length
 }
 
-async function syncLineup(fixtureId: number): Promise<boolean> {
+async function syncLineup(fixtureId: number): Promise<Set<number> | null> {
   const data = await apiFetch(`fixtures/lineups?fixture=${fixtureId}`)
   const lineups = data.response ?? []
 
-  if (lineups.length === 0) return false
+  if (lineups.length === 0) return null
 
   await supabase.from('lineups').delete().eq('fixture_id', fixtureId)
 
   const rows: any[] = []
+  const starterIds = new Set<number>()
 
   for (const team of lineups) {
     for (const p of team.startXI ?? []) {
+      starterIds.add(p.player.id)
       rows.push({
         fixture_id:    fixtureId,
         team_id:       team.team.id,
@@ -95,7 +97,30 @@ async function syncLineup(fixtureId: number): Promise<boolean> {
     await supabase.from('lineups').insert(rows)
   }
 
-  return true
+  return starterIds
+}
+
+async function updatePredictionsWithLineup(fixtureId: number, starterIds: Set<number>) {
+  // Fetch all player_predictions for this fixture
+  const { data: predictions } = await supabase
+    .from('player_predictions')
+    .select('id, player_id')
+    .eq('fixture_id', fixtureId)
+
+  if (!predictions || predictions.length === 0) return
+
+  // Batch update in_lineup and lineups_confirmed for each row
+  await Promise.all(
+    predictions.map(p =>
+      supabase
+        .from('player_predictions')
+        .update({
+          in_lineup: starterIds.has(p.player_id),
+          lineups_confirmed: true,
+        })
+        .eq('id', p.id)
+    )
+  )
 }
 
 export async function GET(req: NextRequest) {
@@ -113,34 +138,40 @@ export async function GET(req: NextRequest) {
       upcomingCount += await syncUpcomingFixtures(leagueId)
     }
 
+    // Include NS and any match within 2hrs — catches late lineup confirms
     const { data: todayMatches } = await supabase
       .from('matches')
       .select('fixture_id, datetime, status_short')
       .in('league_id', LEAGUE_IDS)
       .eq('season', SEASON)
-      .eq('status_short', 'NS')
+      .in('status_short', ['NS', '1H', 'HT'])
       .gte('datetime', `${today}T00:00:00`)
       .lte('datetime', `${today}T23:59:59`)
 
     const lineupTargets = (todayMatches ?? []).filter(m => {
       const kickoff = new Date(m.datetime)
       const hoursUntil = (kickoff.getTime() - now.getTime()) / (1000 * 60 * 60)
-      return hoursUntil >= 0 && hoursUntil <= 2
+      // NS: within 2hr window. In-play: always attempt (lineups may not have been confirmed pre-kick)
+      return m.status_short !== 'NS' || (hoursUntil >= 0 && hoursUntil <= 2)
     })
 
     let lineupsConfirmed = 0
     let lineupsPending = 0
 
     for (const match of lineupTargets) {
-      const confirmed = await syncLineup(match.fixture_id)
+      const starterIds = await syncLineup(match.fixture_id)
 
-      await supabase
-        .from('player_predictions')
-        .update({ lineups_confirmed: confirmed })
-        .eq('fixture_id', match.fixture_id)
-
-      if (confirmed) lineupsConfirmed++
-      else lineupsPending++
+      if (starterIds) {
+        await updatePredictionsWithLineup(match.fixture_id, starterIds)
+        lineupsConfirmed++
+      } else {
+        // Mark predictions as not yet confirmed
+        await supabase
+          .from('player_predictions')
+          .update({ lineups_confirmed: false })
+          .eq('fixture_id', match.fixture_id)
+        lineupsPending++
+      }
     }
 
     return NextResponse.json({

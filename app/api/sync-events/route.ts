@@ -6,6 +6,7 @@ const LEAGUE_IDS = [39, 40]
 const SEASON = 2025
 const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
 const FINISHED_STATUSES = ['FT', 'AET', 'PEN']
+const ACTIVE_STATUSES = [...IN_PLAY_STATUSES, ...FINISHED_STATUSES]
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,10 +23,8 @@ async function apiFetch(path: string) {
 async function syncStats(fixtureId: number) {
   const data = await apiFetch(`fixtures/statistics?fixture=${fixtureId}`)
   const stats = data.response ?? []
-
   const home = stats[0]?.statistics ?? []
   const away = stats[1]?.statistics ?? []
-
   const getStat = (arr: any[], label: string) =>
     arr.find((s: any) => s.type === label)?.value ?? null
 
@@ -70,11 +69,8 @@ async function syncStats(fixtureId: number) {
 async function syncEvents(fixtureId: number) {
   const data = await apiFetch(`fixtures/events?fixture=${fixtureId}`)
   const events = data.response ?? []
-
   await supabase.from('match_events').delete().eq('fixture_id', fixtureId)
-
   if (events.length === 0) return
-
   await supabase.from('match_events').insert(
     events.map((e: any) => ({
       fixture_id:    fixtureId,
@@ -96,12 +92,10 @@ async function syncEvents(fixtureId: number) {
 async function syncPlayerStats(fixtureId: number, leagueId: number) {
   const data = await apiFetch(`fixtures/players?fixture=${fixtureId}`)
   const teams = data.response ?? []
-
   for (const team of teams) {
     for (const p of team.players ?? []) {
       const s = p.statistics?.[0]
       if (!s) continue
-
       await supabase.from('players').upsert({
         player_id:       p.player.id,
         league_id:       leagueId,
@@ -142,29 +136,20 @@ export async function GET(req: NextRequest) {
       .eq('season', SEASON)
       .gte('datetime', `${today}T00:00:00`)
       .lte('datetime', `${today}T23:59:59`)
+      .in('status_short', ACTIVE_STATUSES)
 
-    const active = (todayMatches ?? []).filter(m =>
-      IN_PLAY_STATUSES.includes(m.status_short ?? '') ||
-      FINISHED_STATUSES.includes(m.status_short ?? '')
-    )
-
-    if (active.length === 0) {
+    if (!todayMatches || todayMatches.length === 0) {
       return NextResponse.json({ message: 'No active matches', processed: 0 })
     }
 
-    let statsCount = 0
-    let eventsCount = 0
-    let playerStatsCount = 0
+    let statsCount = 0, eventsCount = 0, playerStatsCount = 0
 
-    for (const match of active) {
+    for (const match of todayMatches) {
       const isFinished = FINISHED_STATUSES.includes(match.status_short ?? '')
-
       await syncStats(match.fixture_id)
       statsCount++
-
       await syncEvents(match.fixture_id)
       eventsCount++
-
       if (isFinished) {
         await syncPlayerStats(match.fixture_id, match.league_id)
         playerStatsCount++
