@@ -1,0 +1,16 @@
+name: Live Sync
+
+on:
+  schedule:
+    - cron: '*/2 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync live scores and events
+        run: |
+          curl -f -X GET https://falsenineapp.com/api/sync-live \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3

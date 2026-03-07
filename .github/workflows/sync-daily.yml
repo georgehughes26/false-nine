@@ -1,0 +1,16 @@
+name: Daily Sync
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-daily:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Daily predictions and rankings sync
+        run: |
+          curl -f -X GET https://falsenineapp.com/api/sync-daily \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3

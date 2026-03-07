@@ -1,0 +1,16 @@
+name: Lineup Sync
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-lineups:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync lineups
+        run: |
+          curl -f -X GET https://falsenineapp.com/api/sync-lineups \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3
