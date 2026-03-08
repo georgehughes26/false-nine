@@ -6,11 +6,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-daily:
+  sync-standings:
     runs-on: ubuntu-latest
     steps:
-      - name: Daily predictions and rankings sync
+      - name: Sync standings
         run: |
-          curl -f -X GET https://falsenineapp.com/api/sync-daily \
+          curl -f -X GET https://falsenineapp.com/api/sync-standings \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3
+
+  sync-rankings:
+    runs-on: ubuntu-latest
+    needs: sync-standings
+    steps:
+      - name: Sync rankings
+        run: |
+          curl -f -X GET https://falsenineapp.com/api/sync-rankings \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --retry 2 --retry-delay 3
+
+  sync-predictions:
+    runs-on: ubuntu-latest
+    needs: sync-rankings
+    steps:
+      - name: Sync predictions
+        run: |
+          curl -f -X GET https://falsenineapp.com/api/sync-predictions \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --retry 2 --retry-delay 3
