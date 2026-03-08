@@ -64,5 +64,5 @@ export default async function Home() {
 
   const nextGW = upcomingGWs[0] ?? parseGW(matches[matches.length - 1]?.round)
 
-  return <GWFilterPage matches={matches} nextGW={nextGW} upcomingGWs={upcomingGWs} grouped={grouped} isPro={isPro} />
+  return <GWFilterPage matches={matches} isPro={isPro} />
 }
