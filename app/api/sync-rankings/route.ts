@@ -9,6 +9,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+async function batchInsert(table: string, rows: any[], chunkSize = 500) {
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize)
+    const { error } = await supabase.from(table).insert(chunk)
+    if (error) console.error(`Insert error on ${table}:`, error.message)
+  }
+}
+
 async function syncTeamRankings(leagueId: number) {
   const { data: matches } = await supabase
     .from('matches')
@@ -66,8 +74,7 @@ async function syncTeamRankings(leagueId: number) {
   }
 
   await supabase.from('team_rankings').delete().match({ league_id: leagueId, season: SEASON })
-  if (rows.length > 0) await supabase.from('team_rankings').insert(rows)
-
+  await batchInsert('team_rankings', rows)
   return rows.length
 }
 
@@ -117,8 +124,7 @@ async function syncPlayerRankings(leagueId: number) {
   }
 
   await supabase.from('player_rankings').delete().match({ league_id: leagueId, season: SEASON })
-  if (rows.length > 0) await supabase.from('player_rankings').insert(rows)
-
+  await batchInsert('player_rankings', rows)
   return rows.length
 }
 
@@ -166,8 +172,7 @@ async function syncRefereeRankings(leagueId: number) {
   }
 
   await supabase.from('referee_rankings').delete().match({ league_id: leagueId, season: SEASON })
-  if (rows.length > 0) await supabase.from('referee_rankings').insert(rows)
-
+  await batchInsert('referee_rankings', rows)
   return rows.length
 }
 
