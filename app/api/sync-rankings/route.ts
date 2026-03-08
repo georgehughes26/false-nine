@@ -42,10 +42,8 @@ async function syncTeamRankings(leagueId: number) {
     }
   }
 
-  await supabase.from('team_rankings').delete().match({ league_id: leagueId, season: SEASON })
-
   const now = new Date().toISOString()
-  let count = 0
+  const rows: any[] = []
 
   for (const stat of statKeys) {
     const sorted = Object.entries(teamStats).sort(
@@ -53,7 +51,7 @@ async function syncTeamRankings(leagueId: number) {
     )
     for (const [rank, [team, stats]] of sorted.entries()) {
       const games = teamGames[team]
-      await supabase.from('team_rankings').upsert({
+      rows.push({
         team_name:      team,
         league_id:      leagueId,
         season:         SEASON,
@@ -63,12 +61,14 @@ async function syncTeamRankings(leagueId: number) {
         total_rank:     rank + 1,
         per_game_rank:  rank + 1,
         updated_at:     now,
-      }, { onConflict: 'team_name,league_id,season,stat' })
-      count++
+      })
     }
   }
 
-  return count
+  await supabase.from('team_rankings').delete().match({ league_id: leagueId, season: SEASON })
+  if (rows.length > 0) await supabase.from('team_rankings').insert(rows)
+
+  return rows.length
 }
 
 async function syncPlayerRankings(leagueId: number) {
@@ -92,10 +92,8 @@ async function syncPlayerRankings(leagueId: number) {
     { key: 'tackles',         col: 'tackles_total' },
   ]
 
-  await supabase.from('player_rankings').delete().match({ league_id: leagueId, season: SEASON })
-
   const now = new Date().toISOString()
-  let count = 0
+  const rows: any[] = []
 
   for (const { key, col } of statKeys) {
     const sorted = (players as any[])
@@ -104,7 +102,7 @@ async function syncPlayerRankings(leagueId: number) {
       .sort((a, b) => b.per90 - a.per90)
 
     for (const [rank, p] of sorted.entries()) {
-      await supabase.from('player_rankings').upsert({
+      rows.push({
         player_id:   p.player_id,
         player_name: p.name,
         team_name:   p.team_name,
@@ -114,12 +112,14 @@ async function syncPlayerRankings(leagueId: number) {
         per90_value: Math.round(p.per90 * 100) / 100,
         per90_rank:  rank + 1,
         updated_at:  now,
-      }, { onConflict: 'player_id,league_id,season,stat' })
-      count++
+      })
     }
   }
 
-  return count
+  await supabase.from('player_rankings').delete().match({ league_id: leagueId, season: SEASON })
+  if (rows.length > 0) await supabase.from('player_rankings').insert(rows)
+
+  return rows.length
 }
 
 async function syncRefereeRankings(leagueId: number) {
@@ -145,17 +145,15 @@ async function syncRefereeRankings(leagueId: number) {
     refStats[name].fouls   += (m.home_fouls ?? 0) + (m.away_fouls ?? 0)
   }
 
-  await supabase.from('referee_rankings').delete().match({ league_id: leagueId, season: SEASON })
-
   const now = new Date().toISOString()
-  let count = 0
+  const rows: any[] = []
 
   for (const stat of ['yellows', 'reds', 'fouls'] as const) {
     const sorted = Object.entries(refStats).sort(
       (a, b) => (b[1][stat] / b[1].games) - (a[1][stat] / a[1].games)
     )
     for (const [rank, [name, stats]] of sorted.entries()) {
-      await supabase.from('referee_rankings').upsert({
+      rows.push({
         referee_name:   name,
         league_id:      leagueId,
         season:         SEASON,
@@ -163,12 +161,14 @@ async function syncRefereeRankings(leagueId: number) {
         per_game_value: Math.round((stats[stat] / stats.games) * 100) / 100,
         per_game_rank:  rank + 1,
         updated_at:     now,
-      }, { onConflict: 'referee_name,league_id,season,stat' })
-      count++
+      })
     }
   }
 
-  return count
+  await supabase.from('referee_rankings').delete().match({ league_id: leagueId, season: SEASON })
+  if (rows.length > 0) await supabase.from('referee_rankings').insert(rows)
+
+  return rows.length
 }
 
 export async function GET(req: NextRequest) {
