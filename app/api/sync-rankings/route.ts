@@ -13,18 +13,19 @@ async function batchInsert(table: string, rows: any[], chunkSize = 500) {
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize)
     const { error } = await supabase.from(table).insert(chunk)
-    if (error) console.error(`Insert error on ${table}:`, error.message)
+    if (error) throw new Error(`Insert error on ${table}: ${error.message}`)
   }
 }
 
 async function syncTeamRankings(leagueId: number) {
-  const { data: matches } = await supabase
+  const { data: matches, error } = await supabase
     .from('matches')
     .select('home_team_name, away_team_name, goals_h, goals_a, home_shots_on, away_shots_on, home_shots_total, away_shots_total, home_corners, away_corners, home_fouls, away_fouls, home_yellow_cards, away_yellow_cards, home_red_cards, away_red_cards, home_saves, away_saves')
     .eq('league_id', leagueId)
     .eq('season', SEASON)
     .not('goals_h', 'is', null)
 
+  if (error) throw new Error(`Team matches fetch error: ${error.message}`)
   if (!matches || matches.length === 0) return 0
 
   const teamStats: Record<string, Record<string, number>> = {}
@@ -79,13 +80,14 @@ async function syncTeamRankings(leagueId: number) {
 }
 
 async function syncPlayerRankings(leagueId: number) {
-  const { data: players } = await supabase
+  const { data: players, error } = await supabase
     .from('players')
     .select('player_id, name, team_name, minutes, shots_on, shots_total, yellow_cards, fouls_committed, fouls_drawn, goals, assists, tackles_total')
     .eq('league_id', leagueId)
     .eq('season', SEASON)
     .gt('minutes', 90)
 
+  if (error) throw new Error(`Players fetch error: ${error.message}`)
   if (!players || players.length === 0) return 0
 
   const statKeys = [
@@ -129,7 +131,7 @@ async function syncPlayerRankings(leagueId: number) {
 }
 
 async function syncRefereeRankings(leagueId: number) {
-  const { data: matches } = await supabase
+  const { data: matches, error } = await supabase
     .from('matches')
     .select('referee, home_yellow_cards, away_yellow_cards, home_red_cards, away_red_cards, home_fouls, away_fouls')
     .eq('league_id', leagueId)
@@ -137,6 +139,7 @@ async function syncRefereeRankings(leagueId: number) {
     .not('goals_h', 'is', null)
     .not('referee', 'is', null)
 
+  if (error) throw new Error(`Referee matches fetch error: ${error.message}`)
   if (!matches || matches.length === 0) return 0
 
   const refStats: Record<string, { yellows: number, reds: number, fouls: number, games: number }> = {}
