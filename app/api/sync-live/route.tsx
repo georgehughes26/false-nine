@@ -201,7 +201,7 @@ export async function GET(req: NextRequest) {
       active:      activeFixtures.length,
       events:      eventsCount,
       stats:       statsCount,
-      playerStats: playerStatsCount,
+      //playerStats: playerStatsCount,
     })
 
   } catch (err) {

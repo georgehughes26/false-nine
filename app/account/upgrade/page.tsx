@@ -18,7 +18,7 @@ const plans = [
     priceId: 'price_1T5OaNFyTkvKNaO1ywXc8Mwk',
     price: '£5.99',
     period: 'per month',
-    description: 'Full Pro access, billed monthly',
+    description: '14-day free trial, then £5.99/month',
     popular: true,
   },
   {
