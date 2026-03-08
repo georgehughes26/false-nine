@@ -33,7 +33,7 @@ async function syncPredictions(leagueId: number) {
     .select('player_id, name, team_id, team_name, minutes, shots_on, shots_total, yellow_cards, fouls_committed, fouls_drawn')
     .eq('league_id', leagueId)
     .eq('season', SEASON)
-    .gt('minutes', 0)
+    .gt('minutes', 450)
 
   if (!players || players.length === 0) return 0
 

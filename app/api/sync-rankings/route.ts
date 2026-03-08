@@ -85,7 +85,7 @@ async function syncPlayerRankings(leagueId: number) {
     .select('player_id, name, team_name, minutes, shots_on, shots_total, yellow_cards, fouls_committed, fouls_drawn, goals, assists, tackles_total')
     .eq('league_id', leagueId)
     .eq('season', SEASON)
-    .gt('minutes', 90)
+    .gt('minutes', 450)
 
   if (error) throw new Error(`Players fetch error: ${error.message}`)
   if (!players || players.length === 0) return 0
