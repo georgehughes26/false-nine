@@ -79,18 +79,31 @@ export default function AccountPage() {
           </div>
 
           <div className="card">
-            <div className="card-label">Plan</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span className={`plan-badge ${isPro ? 'plan-pro' : 'plan-free'}`}>
-                {isPro ? '⚡ Pro' : 'Free'}
-              </span>
-            </div>
-            {!isPro && (
-              <button className="upgrade-btn" onClick={() => router.push('/account/upgrade')}>
-                Upgrade to Pro
-              </button>
-            )}
-          </div>
+  <div className="card-label">Plan</div>
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <span className={`plan-badge ${isPro ? 'plan-pro' : 'plan-free'}`}>
+      {isPro ? '⚡ Pro' : 'Free'}
+    </span>
+  </div>
+  {!isPro && (
+    <button className="upgrade-btn" onClick={() => router.push('/account/upgrade')}>
+      Upgrade to Pro
+    </button>
+  )}
+  {isPro && (
+    <button
+      className="upgrade-btn"
+      style={{ background: 'transparent', border: '1px solid #1a2030', color: '#4a5568', marginTop: '12px' }}
+      onClick={async () => {
+        const res = await fetch('/api/stripe/portal', { method: 'POST' })
+        const { url } = await res.json()
+        if (url) window.location.href = url
+      }}
+    >
+      Manage Subscription
+    </button>
+  )}
+</div>
 
           <ChangePasswordForm />
 

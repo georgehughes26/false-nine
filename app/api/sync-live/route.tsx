@@ -26,10 +26,7 @@ async function syncScores(leagueId: number, date: string) {
   const fixtures = data.response ?? []
 
   for (const f of fixtures) {
-    await supabase.from('matches').upsert({
-      fixture_id:     f.fixture.id,
-      league_id:      leagueId,
-      season:         SEASON,
+    await supabase.from('matches').update({
       status_short:   f.fixture.status.short,
       status_elapsed: f.fixture.status.elapsed,
       referee:        f.fixture.referee ?? null,
@@ -43,7 +40,7 @@ async function syncScores(leagueId: number, date: string) {
       et_goals_a:     f.score.extratime.away,
       pen_goals_h:    f.score.penalty.home,
       pen_goals_a:    f.score.penalty.away,
-    }, { onConflict: 'fixture_id', ignoreDuplicates: false })
+    }).eq('fixture_id', f.fixture.id)
   }
 
   return fixtures
@@ -119,38 +116,6 @@ async function syncStats(fixtureId: number) {
   }).eq('fixture_id', fixtureId)
 }
 
-async function syncPlayerStats(fixtureId: number, leagueId: number) {
-  const data = await apiFetch(`fixtures/players?fixture=${fixtureId}`)
-  const teams = data.response ?? []
-
-  for (const team of teams) {
-    for (const p of team.players ?? []) {
-      const s = p.statistics?.[0]
-      if (!s) continue
-      await supabase.from('players').upsert({
-        player_id:             p.player.id,
-        league_id:             leagueId,
-        team_id:               team.team.id,
-        team_name:             team.team.name,
-        season:                SEASON,
-        name:                  p.player.name,
-        games:                 s.games?.appearences ?? 0,
-        minutes:               s.games?.minutes ?? 0,
-        goals:                 s.goals?.total ?? 0,
-        assists:               s.goals?.assists ?? 0,
-        shots_on:              s.shots?.on ?? 0,
-        shots_total:           s.shots?.total ?? 0,
-        fouls_committed:       s.fouls?.committed ?? 0,
-        fouls_drawn:           s.fouls?.drawn ?? 0,
-        yellow_cards:          s.cards?.yellow ?? 0,
-        tackles_total:         s.tackles?.total ?? 0,
-        rating:                parseFloat(s.games?.rating ?? '0') || null,
-        position:              s.games?.position ?? null,
-      }, { onConflict: 'player_id,league_id,season' })
-    }
-  }
-}
-
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -162,9 +127,7 @@ export async function GET(req: NextRequest) {
     let scoresCount = 0
     let eventsCount = 0
     let statsCount = 0
-    let playerStatsCount = 0
 
-    // Step 1: sync scores for both leagues — 2 API requests total
     const allFixtures: any[] = []
     for (const leagueId of LEAGUE_IDS) {
       const fixtures = await syncScores(leagueId, today)
@@ -172,36 +135,26 @@ export async function GET(req: NextRequest) {
       scoresCount += fixtures.length
     }
 
-    // Step 2: only process active matches for events/stats
     const activeFixtures = allFixtures.filter(f =>
       ACTIVE_STATUSES.includes(f.fixture.status.short)
     )
 
     for (const f of activeFixtures) {
       const fixtureId = f.fixture.id
-      const isFinished = FINISHED_STATUSES.includes(f.fixture.status.short)
 
       await syncEvents(fixtureId)
       eventsCount++
 
-      // Only sync match stats for in-play or finished
       await syncStats(fixtureId)
       statsCount++
-
-      // Only sync player stats once finished
-      if (isFinished) {
-        await syncPlayerStats(fixtureId, f.leagueId)
-        playerStatsCount++
-      }
     }
 
     return NextResponse.json({
-      message:     'Live sync complete',
-      scores:      scoresCount,
-      active:      activeFixtures.length,
-      events:      eventsCount,
-      stats:       statsCount,
-      //playerStats: playerStatsCount,
+      message: 'Live sync complete',
+      scores:  scoresCount,
+      active:  activeFixtures.length,
+      events:  eventsCount,
+      stats:   statsCount,
     })
 
   } catch (err) {
