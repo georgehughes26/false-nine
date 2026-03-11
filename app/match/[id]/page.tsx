@@ -5,6 +5,7 @@ import MatchEvents from './MatchEvents'
 import MatchRefresher from './MatchRefresher'
 import { createSupabaseServer } from '@/lib/supabase-server'
 import React from 'react'
+import type { Metadata } from 'next'
 
 const SEASON = 2025
 const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
@@ -228,6 +229,37 @@ async function getAwayStats(teamName: string) {
     .order('datetime', { ascending: false })
     .limit(20)
   return data ?? []
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const { data: match } = await supabase
+    .from('matches')
+    .select('home_team_name, away_team_name, datetime, league_id')
+    .eq('fixture_id', Number(id))
+    .single()
+
+  if (!match) return { title: 'Match | False Nine' }
+
+  const league = match.league_id === 39 ? 'Premier League' : match.league_id === 40 ? 'Championship' : 'FA Cup'
+  const date = new Date(match.datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  const title = `${match.home_team_name} vs ${match.away_team_name} — Predictions & Stats`
+  const description = `${league} match predictions, xG analysis and player picks for ${match.home_team_name} vs ${match.away_team_name} on ${date}.`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://falsenineapp.com/match/${id}`,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  }
 }
 
 export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {

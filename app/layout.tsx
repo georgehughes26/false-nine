@@ -15,9 +15,56 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "False Nine",
-  description: "Premier League football predictions",
-};
+  metadataBase: new URL('https://falsenineapp.com'),
+  title: {
+    default: 'False Nine — Football Predictions & Stats',
+    template: '%s | False Nine',
+  },
+  description: 'Data-driven football predictions, live scores and deep stats for the Premier League and Championship. Poisson model probabilities, xG analysis, player picks and more.',
+  keywords: ['football predictions', 'Premier League predictions', 'Championship predictions', 'football stats', 'xG', 'BTTS predictions', 'over under football', 'match predictions', 'false nine'],
+  authors: [{ name: 'False Nine', url: 'https://falsenineapp.com' }],
+  creator: 'False Nine',
+  publisher: 'False Nine',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_GB',
+    url: 'https://falsenineapp.com',
+    siteName: 'False Nine',
+    title: 'False Nine — Football Predictions & Stats',
+    description: 'Data-driven football predictions, live scores and deep stats for the Premier League and Championship.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'False Nine — Football Predictions & Stats',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'False Nine — Football Predictions & Stats',
+    description: 'Data-driven football predictions, live scores and deep stats for the Premier League and Championship.',
+    images: ['/og-image.png'],
+  },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'False Nine',
+  },
+  icons: {
+    apple: '/icons/icon-192.png',
+  },
+}
 
 export default function RootLayout({
   children,
@@ -27,12 +74,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#080c10" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="False Nine" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ServiceWorkerRegistration />
