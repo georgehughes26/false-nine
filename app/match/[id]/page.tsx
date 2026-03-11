@@ -622,6 +622,38 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             isLoggedIn={isLoggedIn}
           />
         )}
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'SportsEvent',
+      name: `${match.home_team_name} vs ${match.away_team_name}`,
+      startDate: match.datetime,
+      location: match.venue_name ? {
+        '@type': 'Place',
+        name: match.venue_name,
+      } : undefined,
+      homeTeam: {
+        '@type': 'SportsTeam',
+        name: match.home_team_name,
+      },
+      awayTeam: {
+        '@type': 'SportsTeam',
+        name: match.away_team_name,
+      },
+      sport: 'Football',
+      url: `https://falsenineapp.com/match/${match.fixture_id}`,
+      organizer: {
+        '@type': 'Organization',
+        name: 'False Nine',
+        url: 'https://falsenineapp.com',
+      },
+    })
+  }}
+/>
+
+
       </div>
     </>
   )

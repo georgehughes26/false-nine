@@ -11,6 +11,16 @@ function parseGW(round: string | null): number {
   return m ? parseInt(m[1], 10) : 0
 }
 
+export const metadata = {
+  title: 'Premier League & Championship Fixtures — Predictions & Stats',
+  description: 'Football predictions, live scores and stats for every Premier League and Championship fixture. Poisson model probabilities, BTTS odds and player picks.',
+  openGraph: {
+    title: 'Premier League & Championship Fixtures — Predictions & Stats',
+    description: 'Football predictions, live scores and stats for every Premier League and Championship fixture.',
+    url: 'https://falsenineapp.com',
+  },
+}
+
 export default async function Home() {
   const cookieStore = await cookies()
   const supabase = createServerClient(
