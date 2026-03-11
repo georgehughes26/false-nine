@@ -236,8 +236,13 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
   const supabaseServer = await createSupabaseServer()
   const { data: { user } } = await supabaseServer.auth.getUser()
-  const { data: profile } = await supabaseServer.from('profiles').select('is_pro').eq('id', user?.id).single()
-  const isPro = profile?.is_pro ?? false
+
+  let isPro = false
+  if (user) {
+    const { data: profile } = await supabaseServer.from('profiles').select('is_pro').eq('id', user.id).single()
+    isPro = profile?.is_pro ?? false
+  }
+  const isLoggedIn = !!user
 
   const { data: match } = await supabase
     .from('matches')
@@ -252,8 +257,8 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const isPlayed = isInPlay || isFinished
 
   const refLastName = match.referee
-  ? match.referee.split(',')[0].trim().split(' ').pop() ?? null
-  : null
+    ? match.referee.split(',')[0].trim().split(' ').pop() ?? null
+    : null
 
   const [
     homePlayers, awayPlayers, homeForm, awayForm, h2h, refStats,
@@ -285,11 +290,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     supabase.from('team_rankings').select('*').eq('team_name', match.away_team_name).eq('league_id', match.league_id).eq('season', SEASON).then(r => r.data),
     supabase.from('player_rankings').select('*').eq('season', SEASON).eq('league_id', match.league_id).in('team_name', [match.home_team_name, match.away_team_name]).then(r => r.data),
     refLastName
-    ? supabase.from('referee_rankings').select('*').ilike('referee_name', `%${refLastName}%`).eq('season', SEASON).then(r => r.data)
-    : Promise.resolve([]),
+      ? supabase.from('referee_rankings').select('*').ilike('referee_name', `%${refLastName}%`).eq('season', SEASON).then(r => r.data)
+      : Promise.resolve([]),
   ])
-
-  console.log('DEBUG referee:', match.referee, '| lastName:', refLastName, '| rankings found:', refRankings?.length)
 
   const homeLogo = homeTeamData?.logo ?? null
   const awayLogo = awayTeamData?.logo ?? null
@@ -482,13 +485,13 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
 
-            {match.referee && refStats && (
+            {match.referee && refStats && isPro && (
               <div className="ref-card">
                 <div className="ref-top">
                   <span className="ref-label">Ref</span>
                   <span className="ref-name">
-  {(refRankings ?? []).length > 0 ? (refRankings as any[])[0].referee_name : match.referee?.split(',')[0].trim()}
-</span>
+                    {(refRankings ?? []).length > 0 ? (refRankings as any[])[0].referee_name : match.referee?.split(',')[0].trim()}
+                  </span>
                 </div>
                 <div className="ref-stats">
                   <div className="ref-stat">
@@ -533,6 +536,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             awayMatchStats={awayMatchStats}
             lineupsConfirmed={lineupsConfirmed}
             isPro={isPro}
+            isLoggedIn={isLoggedIn}
           />
         )}
 
@@ -583,6 +587,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             playerRankings={playerRankings ?? []}
             lineups={lineups ?? []}
             isPro={isPro}
+            isLoggedIn={isLoggedIn}
           />
         )}
       </div>

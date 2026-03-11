@@ -168,6 +168,54 @@ function PlayerCard({ prediction, statLabel, rank }: {
   )
 }
 
+function AuthGate({ message }: { message: string }) {
+  return (
+    <div style={{
+      padding: '24px',
+      background: '#0e1318',
+      border: '1px solid rgba(0,200,100,0.15)',
+      borderRadius: '16px',
+      textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      marginBottom: '12px',
+    }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(0,200,100,0.06) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{ fontSize: '24px', marginBottom: '10px' }}>🔒</div>
+      <div style={{
+        fontFamily: 'Bebas Neue, sans-serif',
+        fontSize: '20px', letterSpacing: '1px', color: '#ffffff', marginBottom: '6px',
+      }}>
+        {message}
+      </div>
+      <div style={{ fontSize: '12px', color: '#4a5568', fontWeight: 300, marginBottom: '16px', lineHeight: 1.6 }}>
+        Create a free account to unlock predictions, player picks and more.
+      </div>
+      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+        <a href="/login?mode=signup" style={{
+          padding: '10px 20px', background: '#00c864', borderRadius: '10px',
+          color: '#080c10', fontSize: '11px', fontWeight: 700,
+          letterSpacing: '1px', textTransform: 'uppercase', textDecoration: 'none',
+        }}>
+          Sign Up Free
+        </a>
+        <a href="/login" style={{
+          padding: '10px 20px', background: 'transparent',
+          border: '1px solid #1a2030', borderRadius: '10px',
+          color: '#4a5568', fontSize: '11px', fontWeight: 700,
+          letterSpacing: '1px', textTransform: 'uppercase', textDecoration: 'none',
+        }}>
+          Log In
+        </a>
+      </div>
+    </div>
+  )
+}
+
 export default function Predictions({
   playerPredictions,
   homeSeasonStats,
@@ -178,6 +226,7 @@ export default function Predictions({
   awayMatchStats,
   lineupsConfirmed,
   isPro,
+  isLoggedIn,
 }: {
   playerPredictions: PlayerPrediction[]
   homeSeasonStats: SeasonStats | null
@@ -188,6 +237,7 @@ export default function Predictions({
   awayMatchStats: MatchStat[]
   lineupsConfirmed: boolean
   isPro: boolean
+  isLoggedIn: boolean
 }) {
   const homeConcededPerGame = homeSeasonStats?.concededPerGame ?? 1.15
   const awayConcededPerGame = awaySeasonStats?.concededPerGame ?? 1.15
@@ -208,18 +258,15 @@ export default function Predictions({
 
   const getCategory = (cat: string): (PlayerPrediction | null)[] => {
     const all = playerPredictions.filter(p => p.category === cat)
-
     let pool: PlayerPrediction[]
     if (lineupsConfirmed) {
       const starters = all.filter(p => p.in_lineup === true)
-      // Fall back to full squad if in_lineup wasn't set (stale sync)
       pool = starters.length > 0
         ? starters.sort((a, b) => b.per90_value - a.per90_value)
         : all.sort((a, b) => b.per90_value - a.per90_value)
     } else {
       pool = all.sort((a, b) => b.per90_value - a.per90_value)
     }
-
     const result: (PlayerPrediction | null)[] = pool.slice(0, 3)
     while (result.length < 3) result.push(null)
     return result
@@ -294,6 +341,7 @@ export default function Predictions({
       <div className="pred-section">
         <div className="pred-title">Predictions</div>
 
+        {/* Result — always visible */}
         <div className="pred-subtitle">Result</div>
         <div className="pred-grid-3">
           <div className="pred-card" style={{ background: predBg(homeWin) }}>
@@ -310,84 +358,88 @@ export default function Predictions({
           </div>
         </div>
 
-        {isPro ? goalsSection : <ProLock>{goalsSection}</ProLock>}
+        {/* Goals — requires login, Pro for full access */}
+        {!isLoggedIn ? (
+          <AuthGate message="Sign up to see goals predictions" />
+        ) : isPro ? (
+          goalsSection
+        ) : (
+          <ProLock>{goalsSection}</ProLock>
+        )}
 
         <div className="divider" />
 
         <div className="pred-title">Player Picks</div>
 
-        {!lineupsConfirmed && (
-          <div style={{
-            background: 'rgba(255,200,0,0.08)',
-            border: '1px solid rgba(255,200,0,0.2)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            marginBottom: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <span style={{ fontSize: '13px' }}>⏳</span>
-            <span style={{ fontSize: '11px', color: '#ffc800', fontWeight: 500, lineHeight: 1.3 }}>
-              Based on season stats — will update automatically when lineups are confirmed
-            </span>
-          </div>
+        {/* Player picks — requires login */}
+        {!isLoggedIn ? (
+          <AuthGate message="Sign up to see player picks" />
+        ) : (
+          <>
+            {!lineupsConfirmed && (
+              <div style={{
+                background: 'rgba(255,200,0,0.08)', border: '1px solid rgba(255,200,0,0.2)',
+                borderRadius: '8px', padding: '8px 12px', marginBottom: '12px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+              }}>
+                <span style={{ fontSize: '13px' }}>⏳</span>
+                <span style={{ fontSize: '11px', color: '#ffc800', fontWeight: 500, lineHeight: 1.3 }}>
+                  Based on season stats — will update automatically when lineups are confirmed
+                </span>
+              </div>
+            )}
+
+            {lineupsConfirmed && (
+              <div style={{
+                background: 'rgba(0,200,100,0.08)', border: '1px solid rgba(0,200,100,0.2)',
+                borderRadius: '8px', padding: '8px 12px', marginBottom: '12px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+              }}>
+                <span style={{ fontSize: '13px' }}>✅</span>
+                <span style={{ fontSize: '11px', color: '#00c864', fontWeight: 500, lineHeight: 1.3 }}>
+                  Lineups confirmed — picks based on today's starters
+                </span>
+              </div>
+            )}
+
+            {!hasPlayerData && <div className="no-data-note">Player stats coming soon</div>}
+
+            <div className="pred-subtitle">Most Shots on Target</div>
+            {playerCards(topShotsOn, 'Shots on target').slice(0, 1)}
+            {isPro
+              ? playerCards(topShotsOn, 'Shots on target').slice(1)
+              : <ProLock>{playerCards(topShotsOn, 'Shots on target').slice(1)}</ProLock>
+            }
+
+            <div className="pred-subtitle">Most Shots</div>
+            {playerCards(topShots, 'Shots').slice(0, 1)}
+            {isPro
+              ? playerCards(topShots, 'Shots').slice(1)
+              : <ProLock>{playerCards(topShots, 'Shots').slice(1)}</ProLock>
+            }
+
+            <div className="pred-subtitle">Most Likely to be Booked</div>
+            {playerCards(topYellows, 'Yellow cards').slice(0, 1)}
+            {isPro
+              ? playerCards(topYellows, 'Yellow cards').slice(1)
+              : <ProLock>{playerCards(topYellows, 'Yellow cards').slice(1)}</ProLock>
+            }
+
+            <div className="pred-subtitle">Most Fouls Committed</div>
+            {playerCards(topFoulsCommit, 'Fouls committed').slice(0, 1)}
+            {isPro
+              ? playerCards(topFoulsCommit, 'Fouls committed').slice(1)
+              : <ProLock>{playerCards(topFoulsCommit, 'Fouls committed').slice(1)}</ProLock>
+            }
+
+            <div className="pred-subtitle">Most Fouls Won</div>
+            {playerCards(topFoulsWon, 'Fouls won').slice(0, 1)}
+            {isPro
+              ? playerCards(topFoulsWon, 'Fouls won').slice(1)
+              : <ProLock>{playerCards(topFoulsWon, 'Fouls won').slice(1)}</ProLock>
+            }
+          </>
         )}
-
-        {lineupsConfirmed && (
-          <div style={{
-            background: 'rgba(0,200,100,0.08)',
-            border: '1px solid rgba(0,200,100,0.2)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            marginBottom: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <span style={{ fontSize: '13px' }}>✅</span>
-            <span style={{ fontSize: '11px', color: '#00c864', fontWeight: 500, lineHeight: 1.3 }}>
-              Lineups confirmed — picks based on today's starters
-            </span>
-          </div>
-        )}
-
-        {!hasPlayerData && <div className="no-data-note">Player stats coming soon</div>}
-
-        <div className="pred-subtitle">Most Shots on Target</div>
-        {playerCards(topShotsOn, 'Shots on target').slice(0, 1)}
-        {isPro
-          ? playerCards(topShotsOn, 'Shots on target').slice(1)
-          : <ProLock>{playerCards(topShotsOn, 'Shots on target').slice(1)}</ProLock>
-        }
-
-        <div className="pred-subtitle">Most Shots</div>
-        {playerCards(topShots, 'Shots').slice(0, 1)}
-        {isPro
-          ? playerCards(topShots, 'Shots').slice(1)
-          : <ProLock>{playerCards(topShots, 'Shots').slice(1)}</ProLock>
-        }
-
-        <div className="pred-subtitle">Most Likely to be Booked</div>
-        {playerCards(topYellows, 'Yellow cards').slice(0, 1)}
-        {isPro
-          ? playerCards(topYellows, 'Yellow cards').slice(1)
-          : <ProLock>{playerCards(topYellows, 'Yellow cards').slice(1)}</ProLock>
-        }
-
-        <div className="pred-subtitle">Most Fouls Committed</div>
-        {playerCards(topFoulsCommit, 'Fouls committed').slice(0, 1)}
-        {isPro
-          ? playerCards(topFoulsCommit, 'Fouls committed').slice(1)
-          : <ProLock>{playerCards(topFoulsCommit, 'Fouls committed').slice(1)}</ProLock>
-        }
-
-        <div className="pred-subtitle">Most Fouls Won</div>
-        {playerCards(topFoulsWon, 'Fouls won').slice(0, 1)}
-        {isPro
-          ? playerCards(topFoulsWon, 'Fouls won').slice(1)
-          : <ProLock>{playerCards(topFoulsWon, 'Fouls won').slice(1)}</ProLock>
-        }
       </div>
     </>
   )

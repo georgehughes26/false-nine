@@ -71,9 +71,56 @@ function PlayerRankLabel({ rank }: { rank: number | null }) {
   )
 }
 
+function AuthGate() {
+  return (
+    <div style={{
+      padding: '24px',
+      background: '#0e1318',
+      border: '1px solid rgba(0,200,100,0.15)',
+      borderRadius: '16px',
+      textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(0,200,100,0.06) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{ fontSize: '24px', marginBottom: '10px' }}>🔒</div>
+      <div style={{
+        fontFamily: 'Bebas Neue, sans-serif',
+        fontSize: '20px', letterSpacing: '1px', color: '#ffffff', marginBottom: '6px',
+      }}>
+        Sign up to see player & team stats
+      </div>
+      <div style={{ fontSize: '12px', color: '#4a5568', fontWeight: 300, marginBottom: '16px', lineHeight: 1.6 }}>
+        Create a free account to access squad stats, rankings and more.
+      </div>
+      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+        <a href="/login?mode=signup" style={{
+          padding: '10px 20px', background: '#00c864', borderRadius: '10px',
+          color: '#080c10', fontSize: '11px', fontWeight: 700,
+          letterSpacing: '1px', textTransform: 'uppercase', textDecoration: 'none',
+        }}>
+          Sign Up Free
+        </a>
+        <a href="/login" style={{
+          padding: '10px 20px', background: 'transparent',
+          border: '1px solid #1a2030', borderRadius: '10px',
+          color: '#4a5568', fontSize: '11px', fontWeight: 700,
+          letterSpacing: '1px', textTransform: 'uppercase', textDecoration: 'none',
+        }}>
+          Log In
+        </a>
+      </div>
+    </div>
+  )
+}
+
 export default function SquadView({
   match, homePlayers, awayPlayers, homeTeamStats, awayTeamStats,
-  homeTeamRankings, awayTeamRankings, playerRankings, lineups, isPro
+  homeTeamRankings, awayTeamRankings, playerRankings, lineups, isPro, isLoggedIn
 }: {
   match: any
   homePlayers: any[]
@@ -85,6 +132,7 @@ export default function SquadView({
   playerRankings: PlayerRanking[]
   lineups: LineupPlayer[]
   isPro: boolean
+  isLoggedIn: boolean
 }) {
   const [activeTab, setActiveTab] = useState<'home' | 'away'>('home')
   const [per90, setPer90] = useState(false)
@@ -109,14 +157,12 @@ export default function SquadView({
   const tackles = allPlayers.reduce((s: number, p: any) => s + (p.tackles_total ?? 0), 0)
   const tacklesPerGame = teamStats && teamStats.games > 0 ? tackles / teamStats.games : 0
 
-  // Team ranking lookup — keys match DB stat column names
   const tRank = (stat: string): number | null => {
     if (!per90) return null
     const r = teamRankings.find(r => r.stat === stat)
     return r?.per_game_rank ?? null
   }
 
-  // Player ranking lookup — keys match DB stat column names
   const pRank = (playerId: number, stat: string): number | null => {
     if (!per90) return null
     const r = playerRankings.find(r => r.player_id === playerId && r.stat === stat)
@@ -339,8 +385,15 @@ export default function SquadView({
         .stat-value.red { color: #ff5050; }
         .stat-label { font-size: 8px; color: #4a5568; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
       `}</style>
+
       <div className="squad-section">
-        {isPro ? content : <ProLock>{content}</ProLock>}
+        {!isLoggedIn ? (
+          <AuthGate />
+        ) : isPro ? (
+          content
+        ) : (
+          <ProLock>{content}</ProLock>
+        )}
       </div>
     </>
   )
