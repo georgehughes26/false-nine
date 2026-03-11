@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase-server'
 import GWFilterPage from './GWFilterPage'
 
@@ -30,11 +29,14 @@ export default async function Home() {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const supabaseServer = await createSupabaseServer()
-  const { data: profile } = await supabaseServer.from('profiles').select('is_pro').eq('id', user.id).single()
-  const isPro = profile?.is_pro ?? false
+  // Only fetch Pro status if logged in
+  let isPro = false
+  if (user) {
+    const supabaseServer = await createSupabaseServer()
+    const { data: profile } = await supabaseServer.from('profiles').select('is_pro').eq('id', user.id).single()
+    isPro = profile?.is_pro ?? false
+  }
 
   const { data: matches, error } = await supabase
     .from('matches')
@@ -45,7 +47,6 @@ export default async function Home() {
   if (error) return <div>Error loading fixtures</div>
   if (!matches) return <div>No fixtures found</div>
 
-  // Group by round
   const grouped: Record<string, typeof matches> = {}
   for (const match of matches) {
     const key = match.round ?? 'Unknown'
@@ -53,7 +54,6 @@ export default async function Home() {
     grouped[key].push(match)
   }
 
-  // Find next upcoming GW
   const now = new Date()
   const upcomingGWs = [...new Set(
     matches
