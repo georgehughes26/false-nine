@@ -382,7 +382,13 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: #080c10; color: #e8edf2; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-        .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #080c10; padding-bottom: 40px; }
+.app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #080c10; padding-bottom: 100px; }
+.nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 10px 0 24px; z-index: 50; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
+.nav-item.active { opacity: 1; }
+.nav-icon { font-size: 18px; }
+.nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #00c864; }
+.nav-item:not(.active) .nav-label { color: #4a5568; }
         .back-bar { padding: 56px 24px 0; }
         .back-btn { font-size: 13px; color: #00c864; text-decoration: none; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
         .match-hero { padding: 24px; position: relative; }
@@ -652,7 +658,28 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     })
   }}
 />
-
+<nav className="nav">
+  <a href="/" className="nav-item">
+    <span className="nav-icon">⚽</span>
+    <span className="nav-label">Fixtures</span>
+  </a>
+  <a href="/lms" className="nav-item">
+    <span className="nav-icon">🏆</span>
+    <span className="nav-label">LMS</span>
+  </a>
+  <a href="/fpl" className="nav-item">
+    <span className="nav-icon">📋</span>
+    <span className="nav-label">FPL</span>
+  </a>
+  <a href="/super-six" className="nav-item">
+    <span className="nav-icon">6️⃣</span>
+    <span className="nav-label">Super Six</span>
+  </a>
+  <a href="/account" className="nav-item">
+    <span className="nav-icon">👤</span>
+    <span className="nav-label">Account</span>
+  </a>
+</nav>
 
       </div>
     </>
