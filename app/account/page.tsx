@@ -58,6 +58,8 @@ export default function AccountPage() {
         .plan-free { background: rgba(74,85,104,0.2); color: #4a5568; border: 1px solid #1a2030; }
         .plan-pro { background: rgba(0,200,100,0.12); color: #00c864; border: 1px solid rgba(0,200,100,0.3); }
         .upgrade-btn { width: 100%; padding: 14px; background: #00c864; border: none; border-radius: 10px; cursor: pointer; color: #080c10; font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; margin-top: 12px; }
+        .legal-link { color: #2a3545; text-decoration: none; font-size: 12px; transition: color 0.2s; }
+        .legal-link:hover { color: #00c864; }
         .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 10px 0 24px; z-index: 50; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
@@ -79,36 +81,52 @@ export default function AccountPage() {
           </div>
 
           <div className="card">
-  <div className="card-label">Plan</div>
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-    <span className={`plan-badge ${isPro ? 'plan-pro' : 'plan-free'}`}>
-      {isPro ? '⚡ Pro' : 'Free'}
-    </span>
-  </div>
-  {!isPro && (
-    <button className="upgrade-btn" onClick={() => router.push('/account/upgrade')}>
-      Upgrade to Pro
-    </button>
-  )}
-  {isPro && (
-    <button
-      className="upgrade-btn"
-      style={{ background: 'transparent', border: '1px solid #1a2030', color: '#4a5568', marginTop: '12px' }}
-      onClick={async () => {
-        const res = await fetch('/api/stripe/portal', { method: 'POST' })
-        const { url } = await res.json()
-        if (url) window.location.href = url
-      }}
-    >
-      Manage Subscription
-    </button>
-  )}
-</div>
+            <div className="card-label">Plan</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span className={`plan-badge ${isPro ? 'plan-pro' : 'plan-free'}`}>
+                {isPro ? '⚡ Pro' : 'Free'}
+              </span>
+            </div>
+            {!isPro && (
+              <button className="upgrade-btn" onClick={() => router.push('/account/upgrade')}>
+                Upgrade to Pro
+              </button>
+            )}
+            {isPro && (
+              <button
+                className="upgrade-btn"
+                style={{ background: 'transparent', border: '1px solid #1a2030', color: '#4a5568', marginTop: '12px' }}
+                onClick={async () => {
+                  const res = await fetch('/api/stripe/portal', { method: 'POST' })
+                  const { url } = await res.json()
+                  if (url) window.location.href = url
+                }}
+              >
+                Manage Subscription
+              </button>
+            )}
+          </div>
 
           <ChangePasswordForm />
 
           <div className="card" style={{ padding: '0' }}>
             <SignOutButton />
+          </div>
+
+          {/* Legal footer */}
+          <div style={{
+            marginTop: '8px', paddingTop: '24px',
+            borderTop: '1px solid #1a2030',
+            textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+              <a href="/privacy" className="legal-link">Privacy Policy</a>
+              <span style={{ color: '#1a2030', fontSize: '12px' }}>·</span>
+              <a href="/terms" className="legal-link">Terms of Service</a>
+            </div>
+            <div style={{ fontSize: '11px', color: '#1a2030' }}>
+              © {new Date().getFullYear()} False Nine. All rights reserved.
+            </div>
           </div>
         </div>
 

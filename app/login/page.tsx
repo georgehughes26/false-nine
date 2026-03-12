@@ -41,7 +41,7 @@ const features = [
   {
     icon: '🤖',
     title: 'FPL Assistant',
-    desc: 'Model drivenFPL advice. Captaincy picks, transfer suggestions, and fixture analysis — built on real data.',
+    desc: 'Model driven FPL advice. Captaincy picks, transfer suggestions, and fixture analysis — built on real data.',
     tag: 'Coming Soon',
     tagGreen: false,
   },
@@ -169,6 +169,8 @@ export default function LoginPage() {
         .mode-btn:hover { color: #e8edf2 !important; }
         .scroll-hint { animation: bounce 2s ease-in-out infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+        .legal-link { color: #2a3545; text-decoration: none; transition: color 0.2s; }
+        .legal-link:hover { color: #00c864; }
       `}</style>
 
       <div style={{ maxWidth: '480px', margin: '0 auto', background: '#080c10', minHeight: '100vh' }}>
@@ -179,7 +181,6 @@ export default function LoginPage() {
           alignItems: 'center', justifyContent: 'center',
           padding: '48px 24px 40px', position: 'relative',
         }}>
-          {/* Background glow */}
           <div style={{
             position: 'absolute', top: '10%', left: '50%',
             transform: 'translateX(-50%)',
@@ -188,20 +189,20 @@ export default function LoginPage() {
             pointerEvents: 'none',
           }} />
 
-{/* Wordmark */}
-<div style={{ textAlign: 'center', marginBottom: '36px', position: 'relative' }}>
-<img
-  src="/logotransparent.png"
-  alt="False Nine"
-  style={{ height: '250px', width: 'auto', display: 'block', margin: '0 auto' }}
-/>
-<div style={{
-  fontSize: '11px', color: '#00c864', letterSpacing: '4px',
-  textTransform: 'uppercase', marginTop: '-80px', fontWeight: 500,
-}}>
-  Football Predictions & Stats
-</div>
-</div>
+          {/* Wordmark */}
+          <div style={{ textAlign: 'center', marginBottom: '36px', position: 'relative' }}>
+            <img
+              src="/logotransparent.png"
+              alt="False Nine"
+              style={{ height: '250px', width: 'auto', display: 'block', margin: '0 auto' }}
+            />
+            <div style={{
+              fontSize: '11px', color: '#00c864', letterSpacing: '4px',
+              textTransform: 'uppercase', marginTop: '-80px', fontWeight: 500,
+            }}>
+              Football Predictions & Stats
+            </div>
+          </div>
 
           {/* Auth card */}
           <div style={{
@@ -209,7 +210,6 @@ export default function LoginPage() {
             border: '1px solid #1a2030', borderRadius: '20px', padding: '24px',
             position: 'relative',
           }}>
-            {/* Mode toggle */}
             <div style={{
               display: 'flex', gap: '4px', marginBottom: '24px',
               background: '#080c10', borderRadius: '12px', padding: '4px',
@@ -234,7 +234,6 @@ export default function LoginPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Email */}
               <div>
                 <div style={{
                   fontSize: '11px', fontWeight: 600, letterSpacing: '1px',
@@ -254,7 +253,6 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Password */}
               <div>
                 <div style={{
                   fontSize: '11px', fontWeight: 600, letterSpacing: '1px',
@@ -371,6 +369,28 @@ export default function LoginPage() {
             >
               Get Started Free
             </button>
+          </div>
+
+          {/* Legal footer */}
+          <div style={{
+            marginTop: '40px', paddingTop: '24px',
+            borderTop: '1px solid #1a2030',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              fontFamily: 'Bebas Neue, sans-serif',
+              fontSize: '13px', letterSpacing: '3px', color: '#2a3545', marginBottom: '12px',
+            }}>
+              False Nine
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '16px' }}>
+              <a href="/privacy" className="legal-link" style={{ fontSize: '12px' }}>Privacy Policy</a>
+              <span style={{ color: '#1a2030', fontSize: '12px' }}>·</span>
+              <a href="/terms" className="legal-link" style={{ fontSize: '12px' }}>Terms of Service</a>
+            </div>
+            <div style={{ fontSize: '11px', color: '#1a2030' }}>
+              © {new Date().getFullYear()} False Nine. All rights reserved.
+            </div>
           </div>
         </div>
       </div>
