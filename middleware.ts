@@ -1,10 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const UNLOCK_GATED_PATHS = ['/lms', '/fpl', '/super-six']
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Always allow through — no auth, no unlock needed
+  // Always allow through
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/coming-soon') ||
@@ -18,15 +20,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // For protected pages (/lms, /account, etc) — check app_unlocked cookie
-  const appUnlocked = request.cookies.get('app_unlocked')?.value
-  if (appUnlocked !== 'true') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/coming-soon'
-    return NextResponse.redirect(url)
+  // Access code gate — only for LMS, FPL, Super Six
+  if (UNLOCK_GATED_PATHS.some(p => pathname.startsWith(p))) {
+    const appUnlocked = request.cookies.get('app_unlocked')?.value
+    if (appUnlocked !== 'true') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/coming-soon'
+      return NextResponse.redirect(url)
+    }
   }
 
-  // Unlocked — now check Supabase auth
+  // Supabase auth check for everything else that's not public
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -58,5 +62,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webch)$).*)'],
 }
