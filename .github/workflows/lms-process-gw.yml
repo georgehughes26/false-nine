@@ -1,0 +1,16 @@
+name: LMS Process GW
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour
+  workflow_dispatch:
+
+jobs:
+  process-gw:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process LMS Gameweek
+        run: |
+          curl -X POST https://falsenineapp.com/api/lms/process-gw \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

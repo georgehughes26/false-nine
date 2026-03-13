@@ -32,11 +32,12 @@ export default function LMSLobby() {
 
       const myGameIds = entries?.map((e: any) => e.game_id) ?? []
 
+      // Show waiting AND active public games the user isn't in
       const { data: pubGames } = await supabase
         .from('lms_games')
         .select('*')
         .eq('is_public', true)
-        .eq('status', 'waiting')
+        .in('status', ['waiting', 'active'])
         .not('id', 'in', myGameIds.length > 0 ? `(${myGameIds.join(',')})` : '(null)')
 
       if (pubGames) setPublicGames(pubGames)
@@ -58,6 +59,9 @@ export default function LMSLobby() {
     </div>
   )
 
+  const activeMyGames = myGames.filter(g => g.status !== 'complete')
+  const completedMyGames = myGames.filter(g => g.status === 'complete')
+
   return (
     <>
       <style>{`
@@ -72,8 +76,9 @@ export default function LMSLobby() {
         .subtitle { font-size: 13px; color: #4a5568; margin-top: 6px; font-weight: 300; }
         .content { padding: 24px 24px 100px; display: flex; flex-direction: column; gap: 20px; }
         .section-label { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,200,100,0.15); }
-        .game-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: inherit; display: block; }
+        .game-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: inherit; display: block; margin-bottom: 8px; }
         .game-card:hover { border-color: rgba(0,200,100,0.3); background: #111820; }
+        .game-card.complete { opacity: 0.6; }
         .game-name { font-size: 16px; font-weight: 600; color: #e8edf2; margin-bottom: 6px; }
         .game-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
         .game-stat { font-size: 12px; color: #4a5568; }
@@ -81,6 +86,9 @@ export default function LMSLobby() {
         .status-alive { background: rgba(0,200,100,0.1); color: #00c864; }
         .status-eliminated { background: rgba(255,80,80,0.1); color: #ff5050; }
         .status-waiting { background: rgba(255,200,0,0.1); color: #ffc800; }
+        .status-complete { background: rgba(74,85,104,0.2); color: #4a5568; }
+        .status-active { background: rgba(0,200,100,0.1); color: #00c864; }
+        .pick-warning { font-size: 11px; color: #ffc800; }
         .action-btns { display: flex; gap: 10px; }
         .btn { flex: 1; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
         .btn-primary { background: #00c864; color: #080c10; }
@@ -90,7 +98,8 @@ export default function LMSLobby() {
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
         .nav-icon { font-size: 20px; }
-        .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #00c864; }
+        .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+        .nav-item.active .nav-label { color: #00c864; }
         .nav-item:not(.active) .nav-label { color: #4a5568; }
       `}</style>
 
@@ -107,28 +116,54 @@ export default function LMSLobby() {
             <button className="btn btn-secondary" onClick={() => router.push('/lms/join')}>Join with Code</button>
           </div>
 
+          {/* ACTIVE MY GAMES */}
           <div>
             <div className="section-label">My Games</div>
-            {myGames.length === 0 ? (
-              <div className="empty">You're not in any games yet</div>
+            {activeMyGames.length === 0 ? (
+              <div className="empty">You're not in any active games</div>
             ) : (
-              myGames.map(game => {
+              activeMyGames.map(game => {
                 const gamePicks = myPicks.filter(p => p.game_id === game.id)
+                const currentGwPick = gamePicks.find(p => p.gameweek === game.current_gw)
                 const latestPick = gamePicks.sort((a, b) => b.gameweek - a.gameweek)[0]
+                const needsPick = game.my_status === 'alive' && !currentGwPick && game.status === 'active'
 
                 return (
-                  <a key={game.id} href={`/lms/${game.id}`} className="game-card" style={{ marginBottom: '8px' }}>
+                  <a key={game.id} href={`/lms/${game.id}`} className="game-card">
                     <div className="game-name">{game.name}</div>
                     <div className="game-meta">
-                      <span className={`status-pill ${game.my_status === 'alive' ? 'status-alive' : game.my_status === 'eliminated' ? 'status-eliminated' : 'status-waiting'}`}>
-                        {game.my_status === 'alive' ? '✓ Alive' : game.my_status === 'eliminated' ? '✗ Out' : 'Waiting'}
+                      {/* Player status */}
+                      <span className={`status-pill ${
+                        game.my_status === 'alive' ? 'status-alive'
+                        : game.my_status === 'eliminated' ? 'status-eliminated'
+                        : 'status-waiting'
+                      }`}>
+                        {game.my_status === 'alive' ? '✓ Alive'
+                        : game.my_status === 'eliminated' ? '✗ Out'
+                        : 'Waiting'}
                       </span>
-                      {latestPick && (
-                        <span className="game-stat">GW{latestPick.gameweek}: {latestPick.team_name}</span>
+
+                      {/* Game status */}
+                      {game.status === 'active' && (
+                        <span className="status-pill status-active">GW{game.current_gw}</span>
                       )}
-                      {!latestPick && game.my_status === 'alive' && (
-                        <span style={{ fontSize: '11px', color: '#ffc800' }}>⚠ No pick yet</span>
+                      {game.status === 'waiting' && (
+                        <span className="status-pill status-waiting">Not started</span>
                       )}
+
+                      {/* Pick info */}
+                      {currentGwPick && (
+                        <span className="game-stat">GW{game.current_gw}: {currentGwPick.team_name}</span>
+                      )}
+                      {!currentGwPick && latestPick && (
+                        <span className="game-stat">Last: {latestPick.team_name}</span>
+                      )}
+
+                      {/* Pick warning */}
+                      {needsPick && (
+                        <span className="pick-warning">⚠ Pick needed</span>
+                      )}
+
                       {game.entry_fee > 0 && <span className="game-stat">£{game.entry_fee} entry</span>}
                       {game.pot > 0 && <span className="game-stat">Pot: £{game.pot}</span>}
                     </div>
@@ -138,15 +173,38 @@ export default function LMSLobby() {
             )}
           </div>
 
+          {/* PUBLIC GAMES */}
           {publicGames.length > 0 && (
             <div>
               <div className="section-label">Public Games</div>
               {publicGames.map(game => (
-                <a key={game.id} href={`/lms/${game.id}`} className="game-card" style={{ marginBottom: '8px' }}>
+                <a key={game.id} href={`/lms/${game.id}`} className="game-card">
                   <div className="game-name">{game.name}</div>
                   <div className="game-meta">
-                    <span className="status-pill status-waiting">Open</span>
+                    <span className={`status-pill ${game.status === 'active' ? 'status-active' : 'status-waiting'}`}>
+                      {game.status === 'active' ? `Live — GW${game.current_gw}` : 'Open'}
+                    </span>
                     {game.entry_fee > 0 && <span className="game-stat">£{game.entry_fee} entry</span>}
+                    {game.pot > 0 && <span className="game-stat">Pot: £{game.pot}</span>}
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* COMPLETED MY GAMES */}
+          {completedMyGames.length > 0 && (
+            <div>
+              <div className="section-label">Completed</div>
+              {completedMyGames.map(game => (
+                <a key={game.id} href={`/lms/${game.id}`} className="game-card complete">
+                  <div className="game-name">{game.name}</div>
+                  <div className="game-meta">
+                    <span className="status-pill status-complete">Finished</span>
+                    <span className={`status-pill ${game.my_status === 'alive' ? 'status-alive' : 'status-eliminated'}`}>
+                      {game.my_status === 'alive' ? '🏆 Winner' : '✗ Out'}
+                    </span>
+                    {game.pot > 0 && <span className="game-stat">Pot: £{game.pot}</span>}
                   </div>
                 </a>
               ))}

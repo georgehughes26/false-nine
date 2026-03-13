@@ -18,6 +18,7 @@ export default function GamePage() {
   const [entries, setEntries] = useState<any[]>([])
   const [picks, setPicks] = useState<any[]>([])
   const [matches, setMatches] = useState<any[]>([])
+  const [gwComplete, setGwComplete] = useState(false)
   const [currentGw, setCurrentGw] = useState<number>(1)
   const [myPick, setMyPick] = useState<any>(null)
   const [selectedTeam, setSelectedTeam] = useState<any>(null)
@@ -32,7 +33,7 @@ export default function GamePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       setUser(user)
-  
+
       const { data: game } = await supabase
         .from('lms_games')
         .select('*')
@@ -40,7 +41,7 @@ export default function GamePage() {
         .single()
       if (!game) { router.push('/lms'); return }
       setGame(game)
-  
+
       const { data: entry } = await supabase
         .from('lms_entries')
         .select('*')
@@ -48,54 +49,50 @@ export default function GamePage() {
         .eq('user_id', user.id)
         .single()
       setMyEntry(entry)
-  
+
       const { data: allEntries } = await supabase
         .from('lms_entries')
         .select('*, profiles(id, email)')
         .eq('game_id', id)
         .order('created_at', { ascending: true })
       setEntries(allEntries ?? [])
-  
+
       const { data: allPicks } = await supabase
         .from('lms_picks')
         .select('*')
         .eq('game_id', id)
       setPicks(allPicks ?? [])
-  
+
+      // Use current_gw from game row — set by process-gw route
+      const activeGwNum = game.current_gw ?? game.start_gw
+      setCurrentGw(activeGwNum)
+
       const { data: matchData } = await supabase
         .from('matches')
         .select('round, goals_h, goals_a, datetime, home_team_name, away_team_name, home_team_id, away_team_id, fixture_id')
+        .eq('league_id', game.league_id ?? 39)
         .order('datetime', { ascending: true })
-  
-      let activeGwNum = game.start_gw
-  
+
       if (matchData) {
-        const gws: Record<number, { total: number, played: number, matches: any[] }> = {}
-        matchData.forEach((m: any) => {
+        const gwMatches = matchData.filter((m: any) => {
           const gw = parseInt(m.round?.match(/(\d+)/)?.[1] ?? '0')
-          if (!gw) return
-          if (!gws[gw]) gws[gw] = { total: 0, played: 0, matches: [] }
-          gws[gw].total++
-          gws[gw].matches.push(m)
-          if (m.goals_h !== null && m.goals_a !== null) gws[gw].played++
+          return gw === activeGwNum
         })
-  
-        const activeGw = Object.entries(gws)
-          .filter(([gw]) => parseInt(gw) >= game.start_gw)
-          .find(([, v]) => v.played < v.total)
-  
-        activeGwNum = activeGw ? parseInt(activeGw[0]) : game.start_gw
-        setCurrentGw(activeGwNum)
-        setMatches(gws[activeGwNum]?.matches ?? [])
+        setMatches(gwMatches)
+
+        // GW is complete if all matches have results
+        const complete = gwMatches.length > 0 && gwMatches.every(
+          (m: any) => m.goals_h !== null && m.goals_a !== null
+        )
+        setGwComplete(complete)
       }
-  
-      // Use activeGwNum directly here — not currentGw state
+
       const myPicks = (allPicks ?? []).filter((p: any) => p.user_id === user.id)
       setUsedTeams(myPicks.map((p: any) => p.team_id))
-  
+
       const thisPick = myPicks.find((p: any) => p.gameweek === activeGwNum)
       setMyPick(thisPick ?? null)
-  
+
       setLoading(false)
     }
     load()
@@ -106,28 +103,32 @@ export default function GamePage() {
     setSaving(true)
     setError(null)
 
-    const { error } = await supabase.from('lms_picks').insert({
-      game_id: id,
-      user_id: user.id,
-      gameweek: currentGw,
-      team_id: selectedTeam.id,
-      team_name: selectedTeam.name,
-    })
+    const { data, error } = await supabase
+      .from('lms_picks')
+      .insert({
+        game_id: id,
+        user_id: user.id,
+        gameweek: currentGw,
+        team_id: selectedTeam.id,
+        team_name: selectedTeam.name,
+      })
+      .select()
+      .single()
 
     if (error) {
       setError(error.message)
     } else {
-      setMyPick({ team_name: selectedTeam.name, gameweek: currentGw })
+      setMyPick(data)
       setUsedTeams(prev => [...prev, selectedTeam.id])
+      setSelectedTeam(null)
     }
     setSaving(false)
   }
 
-  // Check if pick window is open (1hr before earliest kickoff)
   const pickWindowOpen = (() => {
     if (!matches.length) return false
     const earliest = Math.min(...matches.map(m => new Date(m.datetime).getTime()))
-    return Date.now() < earliest - 60 * 60 * 1000
+    return Date.now() < earliest - 5 * 60 * 1000
   })()
 
   if (loading) return (
@@ -138,6 +139,10 @@ export default function GamePage() {
 
   const aliveCount = entries.filter(e => e.status === 'alive').length
   const totalCount = entries.length
+  const isComplete = game.status === 'complete'
+  const winner = isComplete && game.winner_id
+    ? entries.find(e => e.user_id === game.winner_id)
+    : null
 
   return (
     <>
@@ -150,13 +155,16 @@ export default function GamePage() {
         .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% -20%, rgba(0,200,100,0.15) 0%, transparent 70%); pointer-events: none; }
         .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 40px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
-        .header-meta { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+        .header-meta { display: flex; gap: 12px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
         .meta-pill { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
         .pill-alive { background: rgba(0,200,100,0.1); color: #00c864; }
         .pill-eliminated { background: rgba(255,80,80,0.1); color: #ff5050; }
-        .pill-waiting { background: rgba(255,200,0,0.1); color: #ffc800; }
+        .pill-complete { background: rgba(255,200,0,0.1); color: #ffc800; }
         .code-badge { font-size: 11px; color: #4a5568; letter-spacing: 2px; font-family: monospace; }
         .survivors { font-size: 12px; color: #4a5568; }
+        .winner-banner { margin: 0 24px 16px; background: rgba(255,200,0,0.08); border: 1px solid rgba(255,200,0,0.25); border-radius: 12px; padding: 16px; text-align: center; }
+        .winner-label { font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #ffc800; margin-bottom: 6px; }
+        .winner-name { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #ffffff; letter-spacing: 2px; }
         .tabs { display: flex; padding: 0 24px; gap: 4px; margin-bottom: 4px; }
         .tab { flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
         .tab.active { color: #00c864; border-bottom-color: #00c864; }
@@ -169,17 +177,25 @@ export default function GamePage() {
         .match-row.used { opacity: 0.35; cursor: not-allowed; }
         .team-name { font-size: 14px; font-weight: 500; color: #e8edf2; }
         .team-name.away { text-align: right; }
-        .vs { font-size: 11px; color: #2a3545; font-weight: 600; }
         .pick-confirm { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 16px; }
         .pick-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 6px; }
         .pick-team { font-size: 20px; font-weight: 600; color: #00c864; margin-bottom: 12px; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
         .btn-primary { background: #00c864; color: #080c10; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .confirmed-pick { background: rgba(0,200,100,0.08); border: 1px solid rgba(0,200,100,0.2); border-radius: 12px; padding: 16px; text-align: center; }
+        .confirmed-pick { border-radius: 12px; padding: 16px; text-align: center; }
+        .confirmed-pick.pending { background: rgba(0,200,100,0.08); border: 1px solid rgba(0,200,100,0.2); }
+        .confirmed-pick.win { background: rgba(0,200,100,0.12); border: 1px solid rgba(0,200,100,0.4); }
+        .confirmed-pick.loss { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.2); }
         .confirmed-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 6px; }
-        .confirmed-team { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #00c864; letter-spacing: 2px; }
-        .confirmed-gw { font-size: 12px; color: #4a5568; margin-top: 4px; }
+        .confirmed-team { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; }
+        .confirmed-team.pending { color: #00c864; }
+        .confirmed-team.win { color: #00c864; }
+        .confirmed-team.loss { color: #ff5050; }
+        .confirmed-status { font-size: 12px; margin-top: 6px; }
+        .confirmed-status.pending { color: #4a5568; }
+        .confirmed-status.win { color: #00c864; font-weight: 600; }
+        .confirmed-status.loss { color: #ff5050; font-weight: 600; }
         .entry-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1a2030; }
         .entry-row:last-child { border-bottom: none; }
         .entry-email { font-size: 13px; color: #e8edf2; }
@@ -214,15 +230,29 @@ export default function GamePage() {
           <div className="logo">False Nine</div>
           <div className="page-title">{game.name}</div>
           <div className="header-meta">
-            {myEntry && (
+            {isComplete ? (
+              <span className="meta-pill pill-complete">🏁 Finished</span>
+            ) : myEntry ? (
               <span className={`meta-pill ${myEntry.status === 'alive' ? 'pill-alive' : 'pill-eliminated'}`}>
                 {myEntry.status === 'alive' ? '✓ Alive' : '✗ Eliminated'}
               </span>
-            )}
+            ) : null}
             <span className="survivors">{aliveCount}/{totalCount} surviving</span>
             <span className="code-badge">{game.code}</span>
           </div>
         </div>
+
+        {/* Winner banner */}
+        {isComplete && (
+          <div className="winner-banner">
+            <div className="winner-label">🏆 Winner</div>
+            <div className="winner-name">
+              {winner
+                ? winner.profiles?.email?.split('@')[0]
+                : 'No winner — all eliminated'}
+            </div>
+          </div>
+        )}
 
         <div className="tabs">
           <button className={`tab ${tab === 'pick' ? 'active' : ''}`} onClick={() => setTab('pick')}>Pick</button>
@@ -248,16 +278,28 @@ export default function GamePage() {
             <>
               <div className="section-label">Gameweek {currentGw}</div>
 
-              {myEntry?.status === 'eliminated' ? (
+              {isComplete ? (
+                <div className="window-closed">This game has finished.</div>
+              ) : myEntry?.status === 'eliminated' ? (
                 <div className="window-closed">You've been eliminated from this game.</div>
               ) : myPick ? (
-                <div className="confirmed-pick">
-                  <div className="confirmed-label">Your Pick — GW{currentGw}</div>
-                  <div className="confirmed-team">{myPick.team_name}</div>
-                  <div className="confirmed-gw">Waiting for result...</div>
-                </div>
+                (() => {
+                  const resultClass = myPick.result === 'win' ? 'win' : myPick.result === 'loss' ? 'loss' : 'pending'
+                  const statusText = myPick.result === 'win'
+                    ? '✓ Your team won — you survive!'
+                    : myPick.result === 'loss'
+                    ? '✗ Your team lost — you\'ve been eliminated.'
+                    : 'Waiting for result...'
+                  return (
+                    <div className={`confirmed-pick ${resultClass}`}>
+                      <div className="confirmed-label">Your Pick — GW{currentGw}</div>
+                      <div className={`confirmed-team ${resultClass}`}>{myPick.team_name}</div>
+                      <div className={`confirmed-status ${resultClass}`}>{statusText}</div>
+                    </div>
+                  )
+                })()
               ) : !pickWindowOpen ? (
-                <div className="window-closed">Pick window is closed — kicks off in less than 1 hour.</div>
+                <div className="window-closed">Pick window is closed — GW{currentGw} has kicked off.</div>
               ) : (
                 <>
                   <div style={{ fontSize: '12px', color: '#4a5568', marginBottom: '4px' }}>
@@ -314,14 +356,27 @@ export default function GamePage() {
               <div className="section-label">Players — {aliveCount} alive</div>
               <div className="card">
                 {entries.map((entry: any) => {
-                  const gwPick = picks.find(p => p.user_id === entry.user_id && p.gameweek === currentGw)
+                  // Only show GW picks once the GW is complete
+                  const gwPick = gwComplete
+                    ? picks.find(p => p.user_id === entry.user_id && p.gameweek === currentGw)
+                    : null
+
                   return (
                     <div key={entry.id} className="entry-row">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div className={`status-dot ${entry.status === 'alive' ? 'dot-alive' : 'dot-eliminated'}`} />
                         <div>
                           <div className="entry-email">{entry.profiles?.email?.split('@')[0]}</div>
-                          {gwPick && <div className="entry-pick">GW{currentGw}: {gwPick.team_name}</div>}
+                          {gwPick && (
+                            <div className="entry-pick">
+                              GW{currentGw}: {gwPick.team_name}
+                              {gwPick.result === 'win' && ' ✓'}
+                              {gwPick.result === 'loss' && ' ✗'}
+                            </div>
+                          )}
+                          {!gwPick && gwComplete && entry.status === 'eliminated' && entry.eliminated_gw === currentGw && (
+                            <div className="entry-pick" style={{ color: '#ff5050' }}>No pick — eliminated</div>
+                          )}
                         </div>
                       </div>
                       {entry.status === 'eliminated' && entry.eliminated_gw && (
@@ -351,8 +406,14 @@ export default function GamePage() {
                           <div className="history-gw">GW{pick.gameweek}</div>
                           <div className="history-team">{pick.team_name}</div>
                         </div>
-                        <span className={`history-result ${pick.gameweek < currentGw ? 'result-win' : 'result-pending'}`}>
-                          {pick.gameweek < currentGw ? 'Survived' : 'Pending'}
+                        <span className={`history-result ${
+                          pick.result === 'win' ? 'result-win'
+                          : pick.result === 'loss' ? 'result-loss'
+                          : 'result-pending'
+                        }`}>
+                          {pick.result === 'win' ? 'Survived'
+                          : pick.result === 'loss' ? 'Eliminated'
+                          : 'Pending'}
                         </span>
                       </div>
                     ))}
@@ -365,7 +426,7 @@ export default function GamePage() {
         <nav className="nav">
           <a href="/" className="nav-item">
             <span className="nav-icon">⚽</span>
-            <span className="nav-label">Results</span>
+            <span className="nav-label">Fixtures</span>
           </a>
           <a href="/lms" className="nav-item active">
             <span className="nav-icon">🏆</span>

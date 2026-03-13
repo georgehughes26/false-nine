@@ -1,24 +1,41 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PUBLIC_PATHS = [
+  '/coming-soon',
+  '/login',
+  '/auth/',
+  '/sitemap.xml',
+  '/robots.txt',
+]
+
+const API_PATHS = [
+  '/api/unlock',
+  '/api/waitlist',
+]
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Always allow these through
-  if (
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/coming-soon') ||
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/auth/') ||
-    pathname === '/' ||
-    pathname.startsWith('/match/') ||
-    pathname === '/sitemap.xml' ||
-    pathname === '/robots.txt'
-  ) {
+  // Always allow static assets and specific API routes
+  if (API_PATHS.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
-  // Supabase auth check
+  // Always allow public pages
+  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+    return NextResponse.next()
+  }
+
+  // Check app_unlocked cookie first — if not set, send to coming soon
+  const appUnlocked = request.cookies.get('app_unlocked')?.value
+  if (appUnlocked !== 'true') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/coming-soon'
+    return NextResponse.redirect(url)
+  }
+
+  // App is unlocked — now check Supabase auth
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(

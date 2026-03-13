@@ -47,7 +47,7 @@ export default function ComingSoonPage() {
     })
     setLoading(false)
     if (res.ok) {
-      router.push('/')
+      router.push('/lms')
     } else {
       setPasswordError('Incorrect access code')
     }
@@ -87,9 +87,9 @@ export default function ComingSoonPage() {
         <div className="glow" />
 
         <div className="logo">
-  <span style={{ color: '#ffffff', fontWeight: 500 }}>FALSE </span>
-  <span style={{ color: '#00c864', fontWeight: 800 }}>NINE</span>
-</div>
+          <span style={{ color: '#ffffff', fontWeight: 500 }}>FALSE </span>
+          <span style={{ color: '#00c864', fontWeight: 800 }}>NINE</span>
+        </div>
         <div className="tagline">Football Predictions · Coming Soon</div>
 
         <div className="card">
