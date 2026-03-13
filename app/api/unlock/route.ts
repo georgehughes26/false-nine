@@ -7,11 +7,11 @@ export async function POST(req: NextRequest) {
   if (password !== PASSWORD) {
     return NextResponse.json({ error: 'Incorrect password' }, { status: 401 })
   }
-  const res = NextResponse.json({ success: true })
+  const res = NextResponse.json({ success: true, redirect: '/lms' })
   res.cookies.set('app_unlocked', 'true', {
     httpOnly: true,
     secure: true,
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
   return res
