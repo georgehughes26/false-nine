@@ -19,7 +19,7 @@ export default function OfflinePage() {
         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, color: '#ffffff', marginBottom: 16 }}>
           You're Offline
         </div>
-        <div style={{ fontSize: 14, color: '#4a5568', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 14, color: '#8896a8', lineHeight: 1.6 }}>
           Check your connection and try again.
         </div>
         <button

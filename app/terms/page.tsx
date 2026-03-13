@@ -15,7 +15,7 @@ export const metadata = {
           .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% -20%, rgba(0,200,100,0.15) 0%, transparent 70%); pointer-events: none; }
           .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
           .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
-          .updated { font-size: 12px; color: #2a3545; margin-top: 8px; }
+          .updated { font-size: 12px; color: #4a5568; margin-top: 8px; }
           .content { padding: 8px 24px; }
           .section { margin-bottom: 32px; }
           .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: #00c864; margin-bottom: 10px; }
@@ -25,7 +25,7 @@ export const metadata = {
           ul li { font-size: 14px; color: #8899aa; line-height: 1.6; font-weight: 300; padding-left: 16px; position: relative; }
           ul li::before { content: '–'; position: absolute; left: 0; color: #00c864; }
           .divider { height: 1px; background: #1a2030; margin-bottom: 32px; }
-          a.back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #4a5568; text-decoration: none; margin-bottom: 24px; transition: color 0.2s; }
+          a.back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #8896a8; text-decoration: none; margin-bottom: 24px; transition: color 0.2s; }
           a.back:hover { color: #00c864; }
           .contact-link { color: #00c864; text-decoration: none; }
           .contact-link:hover { text-decoration: underline; }

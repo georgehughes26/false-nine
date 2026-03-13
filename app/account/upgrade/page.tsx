@@ -67,7 +67,7 @@ export default function UpgradePage() {
         .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% -20%, rgba(0,200,100,0.15) 0%, transparent 70%); pointer-events: none; }
         .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
-        .subtitle { font-size: 13px; color: #4a5568; margin-top: 6px; font-weight: 300; }
+        .subtitle { font-size: 13px; color: #8896a8; margin-top: 6px; font-weight: 300; }
         .content { padding: 24px 24px 100px; display: flex; flex-direction: column; gap: 12px; }
         .plan-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 20px; position: relative; cursor: pointer; transition: border-color 0.2s; }
         .plan-card.popular { border-color: rgba(0,200,100,0.4); }
@@ -76,13 +76,13 @@ export default function UpgradePage() {
         .plan-label { font-size: 16px; font-weight: 600; color: #e8edf2; }
         .plan-price { text-align: right; }
         .plan-amount { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #ffffff; letter-spacing: 1px; }
-        .plan-period { font-size: 11px; color: #4a5568; }
-        .plan-desc { font-size: 12px; color: #4a5568; margin-bottom: 16px; }
+        .plan-period { font-size: 11px; color: #8896a8; }
+        .plan-desc { font-size: 12px; color: #8896a8; margin-bottom: 16px; }
         .plan-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; transition: opacity 0.2s; }
         .plan-btn-primary { background: #00c864; color: #080c10; }
         .plan-btn-secondary { background: #1a2030; color: #e8edf2; }
         .plan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .back-btn { display: flex; align-items: center; gap: 6px; color: #4a5568; font-size: 13px; cursor: pointer; margin-bottom: 8px; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; }
+        .back-btn { display: flex; align-items: center; gap: 6px; color: #8896a8; font-size: 13px; cursor: pointer; margin-bottom: 8px; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; }
       `}</style>
 
       <div className="app">

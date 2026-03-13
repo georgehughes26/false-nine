@@ -35,7 +35,7 @@ export default function AccountPage() {
 
   if (loading) return (
     <div style={{ background: '#080c10', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#4a5568', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Loading...</div>
+      <div style={{ color: '#8896a8', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Loading...</div>
     </div>
   )
 
@@ -52,20 +52,20 @@ export default function AccountPage() {
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
         .content { padding: 24px 24px 100px; display: flex; flex-direction: column; gap: 12px; }
         .card { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 20px; }
-        .card-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 6px; }
+        .card-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; margin-bottom: 6px; }
         .card-value { font-size: 15px; font-weight: 500; color: #e8edf2; }
         .plan-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-        .plan-free { background: rgba(74,85,104,0.2); color: #4a5568; border: 1px solid #1a2030; }
+        .plan-free { background: rgba(74,85,104,0.2); color: #8896a8; border: 1px solid #1a2030; }
         .plan-pro { background: rgba(0,200,100,0.12); color: #00c864; border: 1px solid rgba(0,200,100,0.3); }
         .upgrade-btn { width: 100%; padding: 14px; background: #00c864; border: none; border-radius: 10px; cursor: pointer; color: #080c10; font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; margin-top: 12px; }
-        .legal-link { color: #2a3545; text-decoration: none; font-size: 12px; transition: color 0.2s; }
+        .legal-link { color: #4a5568; text-decoration: none; font-size: 12px; transition: color 0.2s; }
         .legal-link:hover { color: #00c864; }
         .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 10px 0 24px; z-index: 50; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
         .nav-icon { font-size: 18px; }
         .nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #00c864; }
-        .nav-item:not(.active) .nav-label { color: #4a5568; }
+        .nav-item:not(.active) .nav-label { color: #8896a8; }
       `}</style>
 
       <div className="app">
@@ -95,7 +95,7 @@ export default function AccountPage() {
             {isPro && (
               <button
                 className="upgrade-btn"
-                style={{ background: 'transparent', border: '1px solid #1a2030', color: '#4a5568', marginTop: '12px' }}
+                style={{ background: 'transparent', border: '1px solid #1a2030', color: '#8896a8', marginTop: '12px' }}
                 onClick={async () => {
                   const res = await fetch('/api/stripe/portal', { method: 'POST' })
                   const { url } = await res.json()

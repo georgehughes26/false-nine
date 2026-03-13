@@ -22,7 +22,7 @@ export default function ProLock({ children }: { children: React.ReactNode }) {
             <span style={{ fontSize: '16px' }}>🔒</span>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: '#e8edf2', letterSpacing: '0.5px' }}>Pro Feature</div>
-              <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '2px' }}>Upgrade to unlock</div>
+              <div style={{ fontSize: '10px', color: '#8896a8', marginTop: '2px' }}>Upgrade to unlock</div>
             </div>
           </div>
         </div>

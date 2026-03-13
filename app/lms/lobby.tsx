@@ -55,7 +55,7 @@ export default function LMSLobby() {
 
   if (loading) return (
     <div style={{ background: '#080c10', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#4a5568', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Loading...</div>
+      <div style={{ color: '#8896a8', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Loading...</div>
     </div>
   )
 
@@ -73,7 +73,7 @@ export default function LMSLobby() {
         .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% -20%, rgba(0,200,100,0.15) 0%, transparent 70%); pointer-events: none; }
         .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
-        .subtitle { font-size: 13px; color: #4a5568; margin-top: 6px; font-weight: 300; }
+        .subtitle { font-size: 13px; color: #8896a8; margin-top: 6px; font-weight: 300; }
         .content { padding: 24px 24px 100px; display: flex; flex-direction: column; gap: 20px; }
         .section-label { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,200,100,0.15); }
         .game-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: inherit; display: block; margin-bottom: 8px; }
@@ -81,26 +81,26 @@ export default function LMSLobby() {
         .game-card.complete { opacity: 0.6; }
         .game-name { font-size: 16px; font-weight: 600; color: #e8edf2; margin-bottom: 6px; }
         .game-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        .game-stat { font-size: 12px; color: #4a5568; }
+        .game-stat { font-size: 12px; color: #8896a8; }
         .status-pill { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
         .status-alive { background: rgba(0,200,100,0.1); color: #00c864; }
         .status-eliminated { background: rgba(255,80,80,0.1); color: #ff5050; }
         .status-waiting { background: rgba(255,200,0,0.1); color: #ffc800; }
-        .status-complete { background: rgba(74,85,104,0.2); color: #4a5568; }
+        .status-complete { background: rgba(74,85,104,0.2); color: #8896a8; }
         .status-active { background: rgba(0,200,100,0.1); color: #00c864; }
         .pick-warning { font-size: 11px; color: #ffc800; }
         .action-btns { display: flex; gap: 10px; }
         .btn { flex: 1; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
         .btn-primary { background: #00c864; color: #080c10; }
         .btn-secondary { background: #0e1318; color: #e8edf2; border: 1px solid #1a2030; }
-        .empty { font-size: 13px; color: #4a5568; text-align: center; padding: 24px; }
+        .empty { font-size: 13px; color: #8896a8; text-align: center; padding: 24px; }
         .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 12px 0 24px; z-index: 50; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
         .nav-icon { font-size: 20px; }
         .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
         .nav-item.active .nav-label { color: #00c864; }
-        .nav-item:not(.active) .nav-label { color: #4a5568; }
+        .nav-item:not(.active) .nav-label { color: #8896a8; }
       `}</style>
 
       <div className="app">

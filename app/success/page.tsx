@@ -17,7 +17,7 @@ export default function SuccessPage() {
       <div className="app">
         <div style={{ fontSize: '64px', marginBottom: '24px' }}>⚡</div>
         <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '48px', color: '#ffffff', letterSpacing: '2px', marginBottom: '8px' }}>You're Pro!</div>
-        <div style={{ fontSize: '14px', color: '#4a5568', marginBottom: '32px' }}>Full access unlocked. Enjoy the season.</div>
+        <div style={{ fontSize: '14px', color: '#8896a8', marginBottom: '32px' }}>Full access unlocked. Enjoy the season.</div>
         <button
           onClick={() => router.push('/')}
           style={{ padding: '14px 32px', background: '#00c864', border: 'none', borderRadius: '10px', color: '#080c10', fontSize: '13px', fontWeight: 700, fontFamily: 'DM Sans, sans-serif', letterSpacing: '1px', textTransform: 'uppercase', cursor: 'pointer' }}

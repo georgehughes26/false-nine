@@ -234,12 +234,12 @@ export default function GWFilterPage({ matches, isPro }: Props) {
         .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
         .date-label { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: #ffffff; margin-top: 4px; }
-        .match-count { font-size: 13px; color: #4a5568; margin-top: 2px; font-weight: 300; }
+        .match-count { font-size: 13px; color: #8896a8; margin-top: 2px; font-weight: 300; }
         .match-count.has-live { color: #ff4d4d; }
 
         .date-scroll { display: flex; gap: 6px; padding: 12px 24px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
         .date-scroll::-webkit-scrollbar { display: none; }
-        .date-pill { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border-radius: 12px; cursor: pointer; border: 1px solid #2a3545; background: #0e1318; color: #8899aa; transition: all 0.2s; font-family: 'DM Sans', sans-serif; min-width: 52px; }
+        .date-pill { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border-radius: 12px; cursor: pointer; border: 1px solid #4a5568; background: #0e1318; color: #8899aa; transition: all 0.2s; font-family: 'DM Sans', sans-serif; min-width: 52px; }
         .date-pill.active { background: #00c864; color: #080c10; border-color: #00c864; }
         .date-pill.today:not(.active) { border-color: rgba(0,200,100,0.3); }
         .date-pill-day { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1; }
@@ -247,13 +247,13 @@ export default function GWFilterPage({ matches, isPro }: Props) {
         .date-pill-dot { width: 4px; height: 4px; border-radius: 50%; background: #ff4d4d; margin-top: 2px; }
 
         .content { padding: 8px 24px 100px; }
-        .no-matches { text-align: center; padding: 60px 0; color: #2a3545; font-size: 14px; }
+        .no-matches { text-align: center; padding: 60px 0; color: #4a5568; font-size: 14px; }
 
         .league-section { margin-bottom: 16px; }
         .league-header { display: flex; align-items: center; gap: 10px; background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; }
         .league-badge { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 1px; color: #080c10; background: #00c864; padding: 2px 7px; border-radius: 5px; flex-shrink: 0; }
         .league-header-name { font-size: 13px; font-weight: 600; color: #e8edf2; flex: 1; }
-        .league-match-count { font-size: 11px; color: #4a5568; font-weight: 400; }
+        .league-match-count { font-size: 11px; color: #8896a8; font-weight: 400; }
 
         .match-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 16px; margin-bottom: 6px; display: block; text-decoration: none; color: inherit; transition: all 0.2s ease; position: relative; overflow: hidden; }
         .match-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #00c864; opacity: 0; transition: opacity 0.2s ease; }
@@ -268,33 +268,33 @@ export default function GWFilterPage({ matches, isPro }: Props) {
         .vs-block { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .score { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #00c864; letter-spacing: 1px; min-width: 20px; text-align: center; }
         .score.live { color: #ff4d4d; }
-        .score-divider { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #2a3545; }
-        .vs-text { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #2a3545; letter-spacing: 1px; padding: 0 4px; }
+        .score-divider { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #4a5568; }
+        .vs-text { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #4a5568; letter-spacing: 1px; padding: 0 4px; }
         .match-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a2030; }
-        .gw-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: #2a3545; text-transform: uppercase; }
-        .match-venue { font-size: 11px; color: #2a3545; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+        .gw-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: #4a5568; text-transform: uppercase; }
+        .match-venue { font-size: 11px; color: #4a5568; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
         .ft-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #00c864; background: rgba(0,200,100,0.1); padding: 2px 7px; border-radius: 4px; }
         .live-badge { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #ff4d4d; }
         .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; animation: pulse 1.2s ease-in-out infinite; flex-shrink: 0; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
-        .arrow { color: #2a3545; font-size: 14px; }
+        .arrow { color: #4a5568; font-size: 14px; }
 
         .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 10px 0 24px; z-index: 50; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
         .nav-icon { font-size: 18px; }
         .nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #00c864; }
-        .nav-item:not(.active) .nav-label { color: #4a5568; }
+        .nav-item:not(.active) .nav-label { color: #8896a8; }
 
         .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; padding: 24px; }
         .popup { background: #0e1318; border: 1px solid #1a2030; border-radius: 20px; padding: 32px 24px 24px; width: 100%; max-width: 440px; position: relative; text-align: center; }
-        .popup-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #4a5568; font-size: 16px; cursor: pointer; padding: 4px; line-height: 1; }
+        .popup-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #8896a8; font-size: 16px; cursor: pointer; padding: 4px; line-height: 1; }
         .popup-icon { font-size: 40px; margin-bottom: 12px; }
         .popup-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; color: #ffffff; margin-bottom: 12px; }
-        .popup-body { font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 24px; font-weight: 300; }
+        .popup-body { font-size: 14px; color: #8896a8; line-height: 1.6; margin-bottom: 24px; font-weight: 300; }
         .popup-cta { width: 100%; padding: 16px; background: #00c864; color: #080c10; border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; margin-bottom: 12px; }
-        .popup-skip { background: none; border: none; color: #2a3545; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 4px; }
-        .popup-skip:hover { color: #4a5568; }
+        .popup-skip { background: none; border: none; color: #4a5568; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 4px; }
+        .popup-skip:hover { color: #8896a8; }
       `}</style>
 
       <div className="app">

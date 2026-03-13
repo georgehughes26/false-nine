@@ -140,11 +140,11 @@ function PlayerCard({ prediction, statLabel, rank }: {
           <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8edf2' }}>
             {prediction?.player_name ?? '—'}
           </div>
-          <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', color: '#8896a8', marginTop: '2px' }}>
             {prediction?.team_name ?? '—'}
           </div>
           {prediction && (
-            <div style={{ fontSize: '10px', color: '#2a3545', marginTop: '1px' }}>
+            <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '1px' }}>
               {prediction.stat_value} total this season
             </div>
           )}
@@ -159,7 +159,7 @@ function PlayerCard({ prediction, statLabel, rank }: {
         </div>
         <div style={{
           fontSize: '9px', fontWeight: 600, letterSpacing: '1px',
-          textTransform: 'uppercase' as const, color: '#4a5568', marginTop: '2px',
+          textTransform: 'uppercase' as const, color: '#8896a8', marginTop: '2px',
         }}>
           per 90 mins
         </div>
@@ -192,7 +192,7 @@ function AuthGate({ message }: { message: string }) {
       }}>
         {message}
       </div>
-      <div style={{ fontSize: '12px', color: '#4a5568', fontWeight: 300, marginBottom: '16px', lineHeight: 1.6 }}>
+      <div style={{ fontSize: '12px', color: '#8896a8', fontWeight: 300, marginBottom: '16px', lineHeight: 1.6 }}>
         Create a free account to unlock predictions, player picks and more.
       </div>
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -206,7 +206,7 @@ function AuthGate({ message }: { message: string }) {
         <a href="/login" style={{
           padding: '10px 20px', background: 'transparent',
           border: '1px solid #1a2030', borderRadius: '10px',
-          color: '#4a5568', fontSize: '11px', fontWeight: 700,
+          color: '#8896a8', fontSize: '11px', fontWeight: 700,
           letterSpacing: '1px', textTransform: 'uppercase', textDecoration: 'none',
         }}>
           Log In
@@ -324,7 +324,7 @@ export default function Predictions({
       <style>{`
         .pred-section { padding: 0 24px; margin-top: 4px; padding-bottom: 20px; }
         .pred-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: #ffffff; margin-bottom: 12px; }
-        .pred-subtitle { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 12px 0 8px; }
+        .pred-subtitle { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; margin: 12px 0 8px; }
         .pred-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
         .pred-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px; }
         .pred-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }
@@ -332,10 +332,10 @@ export default function Predictions({
         .pred-card-sm { border-radius: 10px; padding: 8px 4px; border: 1px solid #1a2030; text-align: center; }
         .pred-pct { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; line-height: 1; }
         .pred-pct-sm { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.5px; line-height: 1; }
-        .pred-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; margin-top: 3px; }
-        .pred-label-sm { font-size: 7px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #4a5568; margin-top: 2px; }
+        .pred-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8896a8; margin-top: 3px; }
+        .pred-label-sm { font-size: 7px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #8896a8; margin-top: 2px; }
         .divider { height: 1px; background: #1a2030; margin: 20px 0; }
-        .no-data-note { font-size: 11px; color: #2a3545; text-align: center; padding: 8px 0 16px; font-style: italic; }
+        .no-data-note { font-size: 11px; color: #4a5568; text-align: center; padding: 8px 0 16px; font-style: italic; }
       `}</style>
 
       <div className="pred-section">

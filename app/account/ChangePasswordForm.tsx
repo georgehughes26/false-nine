@@ -41,16 +41,16 @@ export default function ChangePasswordForm() {
         }}
       >
         <div>
-          <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#4a5568', marginBottom: '4px' }}>Password</div>
+          <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#8896a8', marginBottom: '4px' }}>Password</div>
           <div style={{ fontSize: '15px', fontWeight: 500, color: '#e8edf2' }}>Change password</div>
         </div>
-        <span style={{ color: '#4a5568', fontSize: '18px' }}>{open ? '↑' : '↓'}</span>
+        <span style={{ color: '#8896a8', fontSize: '18px' }}>{open ? '↑' : '↓'}</span>
       </button>
 
       {open && (
         <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid #1a2030' }}>
           <div style={{ paddingTop: '16px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: '#4a5568', marginBottom: '6px' }}>New Password</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: '#8896a8', marginBottom: '6px' }}>New Password</div>
             <input
               type="password"
               value={password}
@@ -60,7 +60,7 @@ export default function ChangePasswordForm() {
             />
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: '#4a5568', marginBottom: '6px' }}>Confirm Password</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: '#8896a8', marginBottom: '6px' }}>Confirm Password</div>
             <input
               type="password"
               value={confirm}
@@ -84,7 +84,7 @@ export default function ChangePasswordForm() {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            style={{ width: '100%', padding: '12px', background: loading ? '#1a2030' : '#00c864', border: 'none', borderRadius: '10px', cursor: loading ? 'not-allowed' : 'pointer', color: loading ? '#4a5568' : '#080c10', fontSize: '13px', fontWeight: 700, fontFamily: 'DM Sans, sans-serif', letterSpacing: '1px', textTransform: 'uppercase' }}
+            style={{ width: '100%', padding: '12px', background: loading ? '#1a2030' : '#00c864', border: 'none', borderRadius: '10px', cursor: loading ? 'not-allowed' : 'pointer', color: loading ? '#8896a8' : '#080c10', fontSize: '13px', fontWeight: 700, fontFamily: 'DM Sans, sans-serif', letterSpacing: '1px', textTransform: 'uppercase' }}
           >
             {loading ? 'Updating...' : 'Update Password'}
           </button>

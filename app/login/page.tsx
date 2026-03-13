@@ -112,14 +112,14 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
           fontSize: '10px', fontWeight: 700, letterSpacing: '1px',
           textTransform: 'uppercase', padding: '3px 8px', borderRadius: '6px',
           background: feature.tagGreen ? 'rgba(0,200,100,0.1)' : 'rgba(255,255,255,0.05)',
-          color: feature.tagGreen ? '#00c864' : '#4a5568',
+          color: feature.tagGreen ? '#00c864' : '#8896a8',
           border: `1px solid ${feature.tagGreen ? 'rgba(0,200,100,0.2)' : '#1a2030'}`,
           flexShrink: 0,
         }}>
           {feature.tag}
         </span>
       </div>
-      <div style={{ fontSize: '14px', color: '#4a5568', lineHeight: 1.6, fontWeight: 300 }}>
+      <div style={{ fontSize: '14px', color: '#8896a8', lineHeight: 1.6, fontWeight: 300 }}>
         {feature.desc}
       </div>
     </div>
@@ -163,13 +163,13 @@ export default function LoginPage() {
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: #080c10; color: #e8edf2; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-        input::placeholder { color: #2a3545; }
+        input::placeholder { color: #4a5568; }
         input:focus { border-color: rgba(0,200,100,0.4) !important; outline: none; }
         .submit-btn:hover:not(:disabled) { background: #00e070 !important; transform: translateY(-1px); }
         .mode-btn:hover { color: #e8edf2 !important; }
         .scroll-hint { animation: bounce 2s ease-in-out infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
-        .legal-link { color: #2a3545; text-decoration: none; transition: color 0.2s; }
+        .legal-link { color: #4a5568; text-decoration: none; transition: color 0.2s; }
         .legal-link:hover { color: #00c864; }
       `}</style>
 
@@ -224,7 +224,7 @@ export default function LoginPage() {
                     cursor: 'pointer', fontSize: '13px', fontWeight: 600,
                     fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.5px',
                     background: mode === m ? '#1a2030' : 'transparent',
-                    color: mode === m ? '#e8edf2' : '#4a5568',
+                    color: mode === m ? '#e8edf2' : '#8896a8',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -237,7 +237,7 @@ export default function LoginPage() {
               <div>
                 <div style={{
                   fontSize: '11px', fontWeight: 600, letterSpacing: '1px',
-                  textTransform: 'uppercase', color: '#4a5568', marginBottom: '6px',
+                  textTransform: 'uppercase', color: '#8896a8', marginBottom: '6px',
                 }}>Email</div>
                 <input
                   type="email"
@@ -256,7 +256,7 @@ export default function LoginPage() {
               <div>
                 <div style={{
                   fontSize: '11px', fontWeight: 600, letterSpacing: '1px',
-                  textTransform: 'uppercase', color: '#4a5568', marginBottom: '6px',
+                  textTransform: 'uppercase', color: '#8896a8', marginBottom: '6px',
                 }}>Password</div>
                 <input
                   type="password"
@@ -302,7 +302,7 @@ export default function LoginPage() {
                   background: loading ? '#1a2030' : '#00c864',
                   border: 'none', borderRadius: '10px',
                   cursor: loading ? 'not-allowed' : 'pointer',
-                  color: loading ? '#4a5568' : '#080c10',
+                  color: loading ? '#8896a8' : '#080c10',
                   fontSize: '13px', fontWeight: 700,
                   fontFamily: 'DM Sans, sans-serif',
                   letterSpacing: '1.5px', textTransform: 'uppercase',
@@ -316,10 +316,10 @@ export default function LoginPage() {
 
           {/* Scroll hint */}
           <div style={{ marginTop: '40px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#2a3545', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', color: '#4a5568', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>
               What's inside
             </div>
-            <div className="scroll-hint" style={{ color: '#2a3545', fontSize: '18px' }}>↓</div>
+            <div className="scroll-hint" style={{ color: '#4a5568', fontSize: '18px' }}>↓</div>
           </div>
         </div>
 
@@ -332,7 +332,7 @@ export default function LoginPage() {
             }}>
               Everything you need
             </div>
-            <div style={{ fontSize: '13px', color: '#4a5568', marginTop: '6px', fontWeight: 300 }}>
+            <div style={{ fontSize: '13px', color: '#8896a8', marginTop: '6px', fontWeight: 300 }}>
               Data-driven. Free to start.
             </div>
           </div>
@@ -354,7 +354,7 @@ export default function LoginPage() {
             }}>
               Always free, for the basics
             </div>
-            <div style={{ fontSize: '13px', color: '#4a5568', fontWeight: 300, marginBottom: '20px', lineHeight: 1.6 }}>
+            <div style={{ fontSize: '13px', color: '#8896a8', fontWeight: 300, marginBottom: '20px', lineHeight: 1.6 }}>
               Sign up in seconds. No card required. Upgrade when you're ready for more, including a free trial.
             </div>
             <button
@@ -379,7 +379,7 @@ export default function LoginPage() {
           }}>
             <div style={{
               fontFamily: 'Bebas Neue, sans-serif',
-              fontSize: '13px', letterSpacing: '3px', color: '#2a3545', marginBottom: '12px',
+              fontSize: '13px', letterSpacing: '3px', color: '#4a5568', marginBottom: '12px',
             }}>
               False Nine
             </div>

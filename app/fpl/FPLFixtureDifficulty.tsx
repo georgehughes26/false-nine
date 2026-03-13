@@ -51,33 +51,53 @@ const POSITION_SHORT: Record<string, string> = {
 
 function positionStats(pick: CaptainPick) {
   const pos = pick.position
-  if (pos === 'Goalkeeper') return [
-    { label: 'xG', value: pick.xG },
-    { label: 'Sv/G', value: pick.savesPerGame },
-    { label: 'CS%', value: `${pick.csChance}%` },
-    { label: 'Min/G', value: pick.avgMins },
-  ]
-  if (pos === 'Defender') return [
-    { label: 'xG', value: pick.xG },
-    { label: 'xA', value: pick.xA },
-    { label: 'CS%', value: `${pick.csChance}%` },
-    { label: 'Tkl/G', value: pick.tacklesPerGame },
-    { label: 'Min/G', value: pick.avgMins },
-  ]
-  if (pos === 'Midfielder') return [
-    { label: 'xG', value: pick.xG },
-    { label: 'xA', value: pick.xA },
-    { label: 'KP/G', value: pick.keyPassesPerGame },
-    { label: 'Yel/G', value: pick.yellowRisk },
-    { label: 'Min/G', value: pick.avgMins },
-  ]
-  return [
-    { label: 'xG', value: pick.xG },
-    { label: 'xA', value: pick.xA },
-    { label: 'Sh/G', value: pick.shotsPerGame },
-    { label: 'SOT/G', value: pick.sotPerGame },
-    { label: 'Min/G', value: pick.avgMins },
-  ]
+  
+  let stats: { label: string, value: string | number }[] = []
+  
+  if (pos === 'Goalkeeper') {
+    stats = [
+      { label: 'xSaves', value: pick.savesPerGame },
+      { label: 'CS%', value: `${pick.csChance}%` },
+      { label: '', value: '' },
+      { label: '', value: '' },
+      { label: '', value: '' },
+      { label: '', value: '' },
+    ]
+  } else if (pos === 'Defender') {
+    stats = [
+      { label: 'xGoals', value: pick.xG },
+      { label: 'xAssists', value: pick.xA },
+      { label: 'CS%', value: `${pick.csChance}%` },
+      { label: 'xKey Passes', value: pick.keyPassesPerGame },
+      { label: 'Yellow Risk', value: pick.yellowRisk },
+      { label: 'xMins', value: pick.avgMins },
+    ]
+  } else if (pos === 'Midfielder') {
+    stats = [
+      { label: 'xGoals', value: pick.xG },
+      { label: 'xAssists', value: pick.xA },
+      { label: 'xSOTs', value: pick.sotPerGame },
+      { label: 'xKey Passes', value: pick.keyPassesPerGame },
+      { label: 'Yellow Risk', value: pick.yellowRisk },
+      { label: 'xMins', value: pick.avgMins },
+    ]
+  } else {
+    stats = [
+      { label: 'xGoals', value: pick.xG },
+      { label: 'xAssists', value: pick.xA },
+      { label: 'xSOTs', value: pick.sotPerGame },
+      { label: 'xKey Passes', value: pick.keyPassesPerGame },
+      { label: 'Yellow Risk', value: pick.yellowRisk },
+      { label: 'xMins', value: pick.avgMins },
+    ]
+  }
+
+  // Pad to always 6 items — real stats first, empty placeholders at the end
+  while (stats.length < 6) {
+    stats.push({ label: '', value: '' })
+  }
+
+  return stats
 }
 
 function FixtureBadge({ opponentCode, isHome, difficulty }: {
@@ -88,16 +108,12 @@ function FixtureBadge({ opponentCode, isHome, difficulty }: {
   const c = COLORS[difficulty] ?? COLORS[3]
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', padding: '3px 6px', borderRadius: '5px',
+      padding: '2px 7px', borderRadius: '4px',
       background: c.bg, border: `1px solid ${c.border}`,
+      display: 'inline-flex', alignItems: 'center', gap: '3px',
     }}>
-      <span style={{ fontSize: '10px', fontWeight: 700, color: c.text, letterSpacing: '0.5px', lineHeight: 1.3 }}>
-        {opponentCode}
-      </span>
-      <span style={{ fontSize: '8px', color: c.text, opacity: 0.7, fontWeight: 500, lineHeight: 1.2 }}>
-        {isHome ? 'H' : 'A'}
-      </span>
+      <span style={{ fontSize: '10px', fontWeight: 700, color: c.text }}>{opponentCode}</span>
+      <span style={{ fontSize: '9px', color: c.text, opacity: 0.7 }}>{isHome ? 'H' : 'A'}</span>
     </div>
   )
 }
@@ -112,96 +128,78 @@ function CaptainCard({ pick, index }: { pick: CaptainPick, index: number }) {
     <div style={{
       background: isMedal ? medal!.bg : '#0e1318',
       border: `1px solid ${isMedal ? medal!.border : '#1a2030'}`,
-      borderRadius: '12px',
-      padding: '12px 14px',
-      marginBottom: '8px',
+      borderRadius: '10px',
+      padding: '10px 12px',
+      marginBottom: '6px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
     }}>
-      {/* Top row — rank, name/team, xP */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {/* Rank / medal */}
-        <div style={{
-          width: '26px', height: '26px', borderRadius: '6px', flexShrink: 0,
-          background: isMedal ? medal!.bg : '#1a2030',
-          border: `1px solid ${isMedal ? medal!.border : '#1a2030'}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px',
-        }}>
-          {isMedal
-            ? medal!.emoji
-            : <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568' }}>{pick.rank}</span>
-          }
-        </div>
-
-        {/* Name + position + team */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{
-              fontSize: '14px', fontWeight: 600, color: '#e8edf2',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px',
-            }}>
-              {pick.playerName}
-            </span>
-            <span style={{
-              fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px',
-              background: '#1a2030', color: '#4a5568', letterSpacing: '0.5px', flexShrink: 0,
-            }}>
-              {POSITION_SHORT[pick.position] ?? pick.position}
-            </span>
-          </div>
-          <div style={{
-            fontSize: '11px', color: '#4a5568', marginTop: '1px',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px',
-          }}>
-            {pick.teamName}
-          </div>
-        </div>
-
-        {/* xP */}
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: '28px', letterSpacing: '1px', lineHeight: 1, color: xpColor,
-          }}>
-            {pick.xP}
-          </div>
-          <div style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: '#4a5568' }}>
-            xPts
-          </div>
-        </div>
+      {/* Left — rank */}
+      <div style={{
+        width: '22px', flexShrink: 0, textAlign: 'center',
+        fontSize: isMedal ? '16px' : '11px',
+        fontWeight: 700,
+        color: isMedal ? medal!.color : '#8896a8',
+      }}>
+        {isMedal ? medal!.emoji : pick.rank}
       </div>
 
-      {/* Stats + fixture row — all columns identical structure */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start',
-        marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #1a2030',
-        gap: '4px',
-      }}>
-        {stats.map(s => (
-          <div key={s.label} style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: '9px', color: '#4a5568', textTransform: 'uppercase',
-              letterSpacing: '0.5px', marginBottom: '3px', whiteSpace: 'nowrap',
-            }}>
-              {s.label}
-            </div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#e8edf2' }}>
-              {s.value}
-            </div>
-          </div>
-        ))}
+      {/* Middle — player info + stats */}
+{/* Middle — player info + stats */}
+{/* Middle — player info + stats */}
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', marginLeft: '3%' }}>
+    <span style={{
+      fontSize: '13px', fontWeight: 600, color: '#e8edf2',
+      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px',
+    }}>
+      {pick.playerName}
+    </span>
+    <span style={{
+      fontSize: '9px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px',
+      background: '#1a2030', color: '#8896a8', flexShrink: 0,
+    }}>
+      {POSITION_SHORT[pick.position] ?? pick.position}
+    </span>
+    <span style={{ fontSize: '10px', color: '#8896a8', flexShrink: 0 }}>
+      {pick.teamCode}
+    </span>
+    <FixtureBadge
+      opponentCode={pick.opponentCode}
+      isHome={pick.isHome}
+      difficulty={pick.difficulty}
+    />
+  </div>
 
-        {/* Fixture badge — same column structure as stats */}
-        <div style={{ flexShrink: 0, width: '40px' }}>
-          <div style={{
-            fontSize: '9px', color: '#4a5568', textTransform: 'uppercase',
-            letterSpacing: '0.5px', marginBottom: '3px',
-          }}>
-            Fix
-          </div>
-          <FixtureBadge
-            opponentCode={pick.opponentCode}
-            isHome={pick.isHome}
-            difficulty={pick.difficulty}
-          />
+{/* Stats row */}
+<div style={{ display: 'flex', gap: '0px', marginTop: '6px' }}>
+  {stats.map(s => (
+    <div key={s.label} style={{ flex: 1, textAlign: 'center' }}>
+      <div style={{
+        fontSize: '8px', color: '#8896a8', textTransform: 'uppercase',
+        letterSpacing: '0.3px', lineHeight: 1, marginBottom: '2px',
+      }}>
+        {s.label}
+      </div>
+      <div style={{ fontSize: '11px', fontWeight: 600, color: '#a0aec0', lineHeight: 1 }}>
+        {s.value}
+      </div>
+    </div>
+  ))}
+</div>
+      </div>
+
+      {/* Right — xP */}
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: '26px', letterSpacing: '1px', lineHeight: 1, color: xpColor,
+        }}>
+          {pick.xP}
+        </div>
+        <div style={{ fontSize: '8px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: '#8896a8' }}>
+          xPts
         </div>
       </div>
     </div>
@@ -261,20 +259,20 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: #080c10; color: #e8edf2; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
         .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #080c10; }
-        .header { padding: 56px 24px 16px; position: relative; }
+        .header { padding: 56px 24px 0px; position: relative; }
         .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% -20%, rgba(0,200,100,0.15) 0%, transparent 70%); pointer-events: none; }
         .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
-        .subtitle { font-size: 13px; color: #4a5568; margin-top: 6px; font-weight: 300; }
+        .subtitle { font-size: 13px; color: #8896a8; margin-top: 6px; font-weight: 300; }
         .toggle-bar { display: flex; gap: 6px; padding: 16px 24px 4px; }
-        .toggle-btn { flex: 1; padding: 9px 6px; border-radius: 8px; border: 1px solid #1a2030; background: #0e1318; color: #4a5568; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+        .toggle-btn { flex: 1; padding: 9px 6px; border-radius: 8px; border: 1px solid #1a2030; background: #0e1318; color: #8896a8; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
         .toggle-btn.active { background: #00c864; color: #080c10; border-color: #00c864; }
         .legend { display: flex; gap: 8px; padding: 10px 24px; flex-wrap: wrap; }
-        .legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #4a5568; }
+        .legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #8896a8; }
         .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
         .table-wrap { padding: 0 16px 100px; overflow-x: auto; }
         .fdr-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; min-width: 340px; }
-        .th { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; padding: 4px 4px 8px; text-align: center; }
+        .th { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8896a8; padding: 4px 4px 8px; text-align: center; }
         .th-team { text-align: left; padding-left: 0; }
         .team-cell { font-size: 13px; font-weight: 500; color: #e8edf2; padding: 4px 12px 4px 0; white-space: nowrap; min-width: 130px; }
         .gw-cell { padding: 2px; }
@@ -286,7 +284,7 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
         .nav-icon { font-size: 20px; }
         .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
         .nav-item.active .nav-label { color: #00c864; }
-        .nav-item:not(.active) .nav-label { color: #4a5568; }
+        .nav-item:not(.active) .nav-label { color: #8896a8; }
       `}</style>
 
       <div className="app">
@@ -296,7 +294,7 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
           <div className="subtitle">
             {mode === 'fdr' && 'Fixture Difficulty Rating — Next 5 GWs'}
             {mode === 'cs' && 'Clean Sheet Probability — Next 5 GWs'}
-            {mode === 'captain' && `Captain Picks — GW${nextGW}`}
+            {mode === 'captain' && `The Best Captain Picks — GW${nextGW}`}
           </div>
         </div>
 
@@ -342,9 +340,25 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
           </div>
         )}
 
+{mode === 'captain' && (
+  <div style={{ display: 'flex', gap: '12px', padding: '8px 24px 4px', flexWrap: 'wrap' }}>
+    {[
+      { label: 'x = Expected' },
+      { label: 'CS = Clean Sheet' },
+      { label: 'SOT = Shots on Target' },
+      { label: 'PTS = Points' },
+      
+    ].map(({ label }) => (
+      <div key={label} style={{ fontSize: '10px', color: '#8896a8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ width: '6px', height: '6px', borderRadius: '1px', background: '#1a2030', flexShrink: 0 }} />
+        {label}
+      </div>
+    ))}
+  </div>
+)}
+
         {mode === 'captain' ? (
           <div className="captain-wrap">
-            <div className="captain-header">GW{nextGW} Captain Picks — xP Model</div>
             {captainPicks.map((pick, i) => (
               <CaptainCard key={pick.playerName} pick={pick} index={i} />
             ))}
@@ -361,19 +375,42 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
                 </tr>
               </thead>
               <tbody>
-                {teams.map(team => (
-                  <tr key={team.teamName}>
-                    <td className="team-cell">{team.teamName}</td>
-                    {upcomingGWs.map(gw => {
-                      const fixture = team.fixtures.find(f => f.gw === gw)
-                      return (
-                        <td key={gw} className="gw-cell">
-                          <DifficultyCell fixture={fixture} mode={mode} />
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
+              {(() => {
+  const sorted = [...teams].sort((a, b) => {
+    if (mode === 'fdr') {
+      const avgDiffA = a.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (a.fixtures.length || 1)
+      const avgDiffB = b.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (b.fixtures.length || 1)
+      if (avgDiffA !== avgDiffB) return avgDiffA - avgDiffB
+      // Tiebreak: higher CS% = better
+      const avgCSA = a.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (a.fixtures.length || 1)
+      const avgCSB = b.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (b.fixtures.length || 1)
+      return avgCSB - avgCSA
+    } else {
+      // CS view — highest average CS% first
+      const avgCSA = a.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (a.fixtures.length || 1)
+      const avgCSB = b.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (b.fixtures.length || 1)
+      if (avgCSA !== avgCSB) return avgCSB - avgCSA
+      // Tiebreak: lower difficulty = better
+      const avgDiffA = a.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (a.fixtures.length || 1)
+      const avgDiffB = b.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (b.fixtures.length || 1)
+      return avgDiffA - avgDiffB
+    }
+  })
+
+  return sorted.map(team => (
+    <tr key={team.teamName}>
+      <td className="team-cell">{team.teamName}</td>
+      {upcomingGWs.map(gw => {
+        const fixture = team.fixtures.find(f => f.gw === gw)
+        return (
+          <td key={gw} className="gw-cell">
+            <DifficultyCell fixture={fixture} mode={mode} />
+          </td>
+        )
+      })}
+    </tr>
+  ))
+})()}
               </tbody>
             </table>
           </div>

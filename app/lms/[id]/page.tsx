@@ -133,7 +133,7 @@ export default function GamePage() {
 
   if (loading) return (
     <div style={{ background: '#080c10', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#4a5568', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Loading...</div>
+      <div style={{ color: '#8896a8', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Loading...</div>
     </div>
   )
 
@@ -160,13 +160,13 @@ export default function GamePage() {
         .pill-alive { background: rgba(0,200,100,0.1); color: #00c864; }
         .pill-eliminated { background: rgba(255,80,80,0.1); color: #ff5050; }
         .pill-complete { background: rgba(255,200,0,0.1); color: #ffc800; }
-        .code-badge { font-size: 11px; color: #4a5568; letter-spacing: 2px; font-family: monospace; }
-        .survivors { font-size: 12px; color: #4a5568; }
+        .code-badge { font-size: 11px; color: #8896a8; letter-spacing: 2px; font-family: monospace; }
+        .survivors { font-size: 12px; color: #8896a8; }
         .winner-banner { margin: 0 24px 16px; background: rgba(255,200,0,0.08); border: 1px solid rgba(255,200,0,0.25); border-radius: 12px; padding: 16px; text-align: center; }
         .winner-label { font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #ffc800; margin-bottom: 6px; }
         .winner-name { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #ffffff; letter-spacing: 2px; }
         .tabs { display: flex; padding: 0 24px; gap: 4px; margin-bottom: 4px; }
-        .tab { flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+        .tab { flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8896a8; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
         .tab.active { color: #00c864; border-bottom-color: #00c864; }
         .content { padding: 16px 24px 100px; display: flex; flex-direction: column; gap: 12px; }
         .section-label { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,200,100,0.15); }
@@ -178,7 +178,7 @@ export default function GamePage() {
         .team-name { font-size: 14px; font-weight: 500; color: #e8edf2; }
         .team-name.away { text-align: right; }
         .pick-confirm { background: #0e1318; border: 1px solid #1a2030; border-radius: 12px; padding: 16px; }
-        .pick-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 6px; }
+        .pick-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; margin-bottom: 6px; }
         .pick-team { font-size: 20px; font-weight: 600; color: #00c864; margin-bottom: 12px; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
         .btn-primary { background: #00c864; color: #080c10; }
@@ -187,42 +187,42 @@ export default function GamePage() {
         .confirmed-pick.pending { background: rgba(0,200,100,0.08); border: 1px solid rgba(0,200,100,0.2); }
         .confirmed-pick.win { background: rgba(0,200,100,0.12); border: 1px solid rgba(0,200,100,0.4); }
         .confirmed-pick.loss { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.2); }
-        .confirmed-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 6px; }
+        .confirmed-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; margin-bottom: 6px; }
         .confirmed-team { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; }
         .confirmed-team.pending { color: #00c864; }
         .confirmed-team.win { color: #00c864; }
         .confirmed-team.loss { color: #ff5050; }
         .confirmed-status { font-size: 12px; margin-top: 6px; }
-        .confirmed-status.pending { color: #4a5568; }
+        .confirmed-status.pending { color: #8896a8; }
         .confirmed-status.win { color: #00c864; font-weight: 600; }
         .confirmed-status.loss { color: #ff5050; font-weight: 600; }
         .entry-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1a2030; }
         .entry-row:last-child { border-bottom: none; }
         .entry-email { font-size: 13px; color: #e8edf2; }
-        .entry-pick { font-size: 12px; color: #4a5568; }
+        .entry-pick { font-size: 12px; color: #8896a8; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .dot-alive { background: #00c864; }
         .dot-eliminated { background: #ff5050; }
         .history-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1a2030; }
         .history-row:last-child { border-bottom: none; }
-        .history-gw { font-size: 11px; font-weight: 600; color: #4a5568; letter-spacing: 1px; text-transform: uppercase; }
+        .history-gw { font-size: 11px; font-weight: 600; color: #8896a8; letter-spacing: 1px; text-transform: uppercase; }
         .history-team { font-size: 14px; font-weight: 500; color: #e8edf2; }
         .history-result { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
         .result-win { background: rgba(0,200,100,0.1); color: #00c864; }
-        .result-pending { background: rgba(74,85,104,0.2); color: #4a5568; }
+        .result-pending { background: rgba(74,85,104,0.2); color: #8896a8; }
         .result-loss { background: rgba(255,80,80,0.1); color: #ff5050; }
-        .window-closed { text-align: center; padding: 24px; color: #4a5568; font-size: 13px; }
+        .window-closed { text-align: center; padding: 24px; color: #8896a8; font-size: 13px; }
         .pot-banner { background: rgba(0,200,100,0.08); border: 1px solid rgba(0,200,100,0.2); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-        .pot-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; }
+        .pot-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; }
         .pot-amount { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #00c864; letter-spacing: 1px; }
         .error { font-size: 12px; color: #ff5050; padding: 10px 14px; background: rgba(255,80,80,0.08); border-radius: 8px; border: 1px solid rgba(255,80,80,0.2); }
-        .back-btn { display: flex; align-items: center; gap: 6px; color: #4a5568; font-size: 13px; cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; }
+        .back-btn { display: flex; align-items: center; gap: 6px; color: #8896a8; font-size: 13px; cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; }
         .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 12px 0 24px; z-index: 50; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
         .nav-icon { font-size: 20px; }
         .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #00c864; }
-        .nav-item:not(.active) .nav-label { color: #4a5568; }
+        .nav-item:not(.active) .nav-label { color: #8896a8; }
       `}</style>
 
       <div className="app">
@@ -302,7 +302,7 @@ export default function GamePage() {
                 <div className="window-closed">Pick window is closed — GW{currentGw} has kicked off.</div>
               ) : (
                 <>
-                  <div style={{ fontSize: '12px', color: '#4a5568', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '12px', color: '#8896a8', marginBottom: '4px' }}>
                     Pick a team to win. Teams you've already used are greyed out.
                   </div>
                   {matches.map((match: any) => {
@@ -320,14 +320,14 @@ export default function GamePage() {
                             onClick={() => !homeUsed && setSelectedTeam({ id: match.home_team_id, name: match.home_team_name })}
                           >
                             <span className="team-name">{match.home_team_name}</span>
-                            <span style={{ fontSize: '10px', color: '#4a5568' }}>H</span>
+                            <span style={{ fontSize: '10px', color: '#8896a8' }}>H</span>
                           </div>
                           <div
                             className={`match-row ${awaySelected ? 'selected' : ''} ${awayUsed ? 'used' : ''}`}
                             style={{ flex: 1 }}
                             onClick={() => !awayUsed && setSelectedTeam({ id: match.away_team_id, name: match.away_team_name })}
                           >
-                            <span style={{ fontSize: '10px', color: '#4a5568' }}>A</span>
+                            <span style={{ fontSize: '10px', color: '#8896a8' }}>A</span>
                             <span className="team-name away">{match.away_team_name}</span>
                           </div>
                         </div>

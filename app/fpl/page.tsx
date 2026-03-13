@@ -44,10 +44,6 @@ function csPoints(position: string): number {
 }
 
 function fullName(player: any): string {
-  if (player.firstname && player.lastname) {
-    const first = player.firstname.split(' ')[0]
-    return `${first} ${player.lastname}`
-  }
   return player.name ?? 'Unknown'
 }
 

@@ -103,15 +103,15 @@ export default function JoinGame() {
         .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
         .content { padding: 24px 24px 100px; display: flex; flex-direction: column; gap: 16px; }
-        .field-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 6px; }
+        .field-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; margin-bottom: 6px; }
         .input { width: 100%; padding: 14px; background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; color: #e8edf2; font-family: 'DM Sans', sans-serif; outline: none; font-size: 20px; letter-spacing: 6px; text-transform: uppercase; text-align: center; }
         .input:focus { border-color: rgba(0,200,100,0.3); }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
         .btn-primary { background: #00c864; color: #080c10; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .back-btn { display: flex; align-items: center; gap: 6px; color: #4a5568; font-size: 13px; cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; margin-bottom: 8px; }
+        .back-btn { display: flex; align-items: center; gap: 6px; color: #8896a8; font-size: 13px; cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; margin-bottom: 8px; }
         .error { font-size: 12px; color: #ff5050; padding: 10px 14px; background: rgba(255,80,80,0.08); border-radius: 8px; border: 1px solid rgba(255,80,80,0.2); }
-        .hint { font-size: 12px; color: #4a5568; text-align: center; }
+        .hint { font-size: 12px; color: #8896a8; text-align: center; }
       `}</style>
 
       <div className="app">

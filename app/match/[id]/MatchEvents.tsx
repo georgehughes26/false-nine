@@ -81,7 +81,7 @@ function StatBar({ label, home, away }: { label: string; home: number | null; aw
         }}>{h}</span>
         <span style={{
           fontSize: '9px', fontWeight: 600, letterSpacing: '2px',
-          textTransform: 'uppercase' as const, color: '#4a5568',
+          textTransform: 'uppercase' as const, color: '#8896a8',
         }}>{label}</span>
         <span style={{
           fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px',
@@ -90,7 +90,7 @@ function StatBar({ label, home, away }: { label: string; home: number | null; aw
         }}>{a}</span>
       </div>
       <div style={{ display: 'flex', height: '3px', borderRadius: '2px', overflow: 'hidden', background: '#1a2030' }}>
-        <div style={{ width: `${homePct}%`, background: homeWins ? '#00c864' : '#2a3545', transition: 'width 0.3s' }} />
+        <div style={{ width: `${homePct}%`, background: homeWins ? '#00c864' : '#4a5568', transition: 'width 0.3s' }} />
         <div style={{ width: `${awayPct}%`, background: awayWins ? '#00c864' : '#1a2030' }} />
       </div>
     </div>
@@ -121,7 +121,7 @@ function LineupColumn({ players, subs, formation, side }: {
             display: 'flex', alignItems: 'center', gap: '6px',
             marginBottom: '4px', flexDirection: isAway ? 'row-reverse' : 'row',
           }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#2a3545', width: '16px', textAlign: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '16px', textAlign: 'center', flexShrink: 0 }}>
               {p.player_number}
             </span>
             <span style={{ fontSize: '11px', color: '#e8edf2', fontWeight: 500, textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
@@ -134,7 +134,7 @@ function LineupColumn({ players, subs, formation, side }: {
         <>
           <div style={{
             fontSize: '8px', fontWeight: 600, letterSpacing: '2px',
-            textTransform: 'uppercase' as const, color: '#2a3545',
+            textTransform: 'uppercase' as const, color: '#4a5568',
             marginBottom: '6px', textAlign: isAway ? 'right' : 'left',
           }}>Subs</div>
           {subs.map((p, i) => (
@@ -142,10 +142,10 @@ function LineupColumn({ players, subs, formation, side }: {
               display: 'flex', alignItems: 'center', gap: '6px',
               marginBottom: '4px', flexDirection: isAway ? 'row-reverse' : 'row',
             }}>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#2a3545', width: '16px', textAlign: 'center', flexShrink: 0 }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '16px', textAlign: 'center', flexShrink: 0 }}>
                 {p.player_number}
               </span>
-              <span style={{ fontSize: '11px', color: '#4a5568', textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
+              <span style={{ fontSize: '11px', color: '#8896a8', textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
                 {p.player_name}
               </span>
             </div>
@@ -171,7 +171,7 @@ function HalfDivider({ label }: { label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '10px 0' }}>
       <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
-      <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '1px', color: '#4a5568' }}>
+      <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '1px', color: '#8896a8' }}>
         {label}
       </span>
       <div style={{ flex: 1, height: '1px', background: '#1a2030' }} />
@@ -184,7 +184,7 @@ function EventRow({ e, isHome }: { e: Event; isHome: boolean }) {
   const isGoal = e.event_type === 'Goal'
   const isCard = e.event_type === 'Card'
   const isSub = e.event_type === 'subst'
-  const textColor = (isGoal || isCard) ? '#e8edf2' : '#4a5568'
+  const textColor = (isGoal || isCard) ? '#e8edf2' : '#8896a8'
   const fontWeight = (isGoal || isCard) ? 600 : 400
 
   return (
@@ -195,7 +195,7 @@ function EventRow({ e, isHome }: { e: Event; isHome: boolean }) {
     }}>
       {isHome ? (
         <>
-          <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '28px', flexShrink: 0, textAlign: 'right' }}>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: '#8896a8', width: '28px', flexShrink: 0, textAlign: 'right' }}>
             {e.elapsed}{e.elapsed_extra ? `+${e.elapsed_extra}` : ''}'
           </span>
           <span style={{ fontSize: '14px' }}>{icon}</span>
@@ -206,7 +206,7 @@ function EventRow({ e, isHome }: { e: Event; isHome: boolean }) {
               ) : e.player_name}
             </div>
             {isGoal && e.assist_name && (
-              <div style={{ fontSize: '10px', color: '#4a5568' }}>Assist: {e.assist_name}</div>
+              <div style={{ fontSize: '10px', color: '#8896a8' }}>Assist: {e.assist_name}</div>
             )}
           </div>
         </>
@@ -219,11 +219,11 @@ function EventRow({ e, isHome }: { e: Event; isHome: boolean }) {
               ) : e.player_name}
             </div>
             {isGoal && e.assist_name && (
-              <div style={{ fontSize: '10px', color: '#4a5568' }}>Assist: {e.assist_name}</div>
+              <div style={{ fontSize: '10px', color: '#8896a8' }}>Assist: {e.assist_name}</div>
             )}
           </div>
           <span style={{ fontSize: '14px' }}>{icon}</span>
-          <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '28px', flexShrink: 0 }}>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: '#8896a8', width: '28px', flexShrink: 0 }}>
             {e.elapsed}{e.elapsed_extra ? `+${e.elapsed_extra}` : ''}'
           </span>
         </>
@@ -313,13 +313,13 @@ export default function MatchEvents({ match, events, lineups }: {
           <SectionLabel text="Lineups" />
           <div style={{ display: 'flex', gap: '1px', background: '#1a2030', borderRadius: '12px', overflow: 'hidden' }}>
             <div style={{ flex: 1, background: '#0e1318', padding: '14px 12px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', letterSpacing: '1px', marginBottom: '8px', textTransform: 'uppercase' as const }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8896a8', letterSpacing: '1px', marginBottom: '8px', textTransform: 'uppercase' as const }}>
                 {match.home_team_name}
               </div>
               <LineupColumn players={homePlayers} subs={homeSubstitutes} formation={homeFormation} side="home" />
             </div>
             <div style={{ flex: 1, background: '#0e1318', padding: '14px 12px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', letterSpacing: '1px', marginBottom: '8px', textAlign: 'right' as const, textTransform: 'uppercase' as const }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8896a8', letterSpacing: '1px', marginBottom: '8px', textAlign: 'right' as const, textTransform: 'uppercase' as const }}>
                 {match.away_team_name}
               </div>
               <LineupColumn players={awayPlayers} subs={awaySubstitutes} formation={awayFormation} side="away" />

@@ -51,7 +51,7 @@ export default function CookieBanner() {
         }
         .cookie-text {
           font-family: 'DM Sans', sans-serif;
-          font-size: 12px; color: #4a5568;
+          font-size: 12px; color: #8896a8;
           line-height: 1.6; font-weight: 300; margin-bottom: 16px;
         }
         .cookie-link { color: #00c864; text-decoration: none; }
@@ -68,11 +68,11 @@ export default function CookieBanner() {
         .cookie-decline {
           flex: 1; padding: 11px; background: transparent;
           border: 1px solid #1a2030; border-radius: 8px; cursor: pointer;
-          color: #4a5568; font-size: 12px; font-weight: 600;
+          color: #8896a8; font-size: 12px; font-weight: 600;
           font-family: 'DM Sans', sans-serif; letter-spacing: 1px;
           text-transform: uppercase; transition: all 0.2s;
         }
-        .cookie-decline:hover { border-color: #2a3545; color: #e8edf2; }
+        .cookie-decline:hover { border-color: #4a5568; color: #e8edf2; }
       `}</style>
 
       <div className="cookie-banner">

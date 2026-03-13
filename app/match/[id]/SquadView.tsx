@@ -34,17 +34,17 @@ interface LineupPlayer {
 }
 
 function teamRankColor(rank: number | null): string {
-  if (rank === null) return '#2a3545'
+  if (rank === null) return '#4a5568'
   if (rank <= 3) return '#00c864'
   if (rank <= 10) return '#ffc800'
-  return '#2a3545'
+  return '#4a5568'
 }
 
 function playerRankColor(rank: number | null): string {
-  if (rank === null) return '#2a3545'
+  if (rank === null) return '#4a5568'
   if (rank <= 10) return '#00c864'
   if (rank <= 25) return '#ffc800'
-  return '#2a3545'
+  return '#4a5568'
 }
 
 function TeamRankLabel({ rank }: { rank: number | null }) {
@@ -94,7 +94,7 @@ function AuthGate() {
       }}>
         Sign up to see player & team stats
       </div>
-      <div style={{ fontSize: '12px', color: '#4a5568', fontWeight: 300, marginBottom: '16px', lineHeight: 1.6 }}>
+      <div style={{ fontSize: '12px', color: '#8896a8', fontWeight: 300, marginBottom: '16px', lineHeight: 1.6 }}>
         Create a free account to access squad stats, rankings and more.
       </div>
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -108,7 +108,7 @@ function AuthGate() {
         <a href="/login" style={{
           padding: '10px 20px', background: 'transparent',
           border: '1px solid #1a2030', borderRadius: '10px',
-          color: '#4a5568', fontSize: '11px', fontWeight: 700,
+          color: '#8896a8', fontSize: '11px', fontWeight: 700,
           letterSpacing: '1px', textTransform: 'uppercase', textDecoration: 'none',
         }}>
           Log In
@@ -333,7 +333,7 @@ export default function SquadView({
         <>
           <div style={{
             fontSize: '9px', fontWeight: 600, letterSpacing: '2px',
-            textTransform: 'uppercase', color: '#2a3545',
+            textTransform: 'uppercase', color: '#4a5568',
             margin: '12px 0 8px', textAlign: 'center',
           }}>
             Substitutes
@@ -350,12 +350,12 @@ export default function SquadView({
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
         .squad-section { padding: 0 24px; margin-top: 24px; padding-bottom: 40px; }
         .team-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-        .team-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #1a2030; background: #0e1318; color: #4a5568; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .team-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #1a2030; background: #0e1318; color: #8896a8; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
         .team-tab.active { background: rgba(0, 200, 100, 0.1); border-color: rgba(0, 200, 100, 0.4); color: #00c864; }
         .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .toggle-label { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; }
+        .toggle-label { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; }
         .toggle { display: flex; align-items: center; gap: 8px; }
-        .toggle-text { font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; }
+        .toggle-text { font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8896a8; }
         .toggle-text.on { color: #00c864; }
         .toggle-switch { width: 40px; height: 22px; border-radius: 11px; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
         .toggle-switch::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 3px; transition: left 0.2s; }
@@ -367,15 +367,15 @@ export default function SquadView({
         .team-stat-value.highlight { color: #00c864; }
         .team-stat-value.yellow { color: #ffc800; }
         .team-stat-value.red { color: #ff5050; }
-        .team-stat-value.dim { color: #4a5568; }
-        .team-stat-label { font-size: 8px; font-weight: 600; color: #4a5568; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 3px; }
+        .team-stat-value.dim { color: #8896a8; }
+        .team-stat-label { font-size: 8px; font-weight: 600; color: #8896a8; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 3px; }
         .team-stats-row2 { margin-top: 8px; padding-top: 8px; border-top: 1px solid #1a2030; }
         .player-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; }
         .player-top { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
         .player-name { font-size: 13px; font-weight: 600; color: #e8edf2; }
-        .dot { color: #2a3545; font-size: 10px; }
-        .player-position { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; }
-        .player-games { font-size: 10px; color: #4a5568; margin-left: auto; white-space: nowrap; }
+        .dot { color: #4a5568; font-size: 10px; }
+        .player-position { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8896a8; }
+        .player-games { font-size: 10px; color: #8896a8; margin-left: auto; white-space: nowrap; }
         .stats-row { display: flex; gap: 0; border-top: 1px solid #1a2030; padding-top: 8px; }
         .stat { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 2px; }
         .stat + .stat { border-left: 1px solid #1a2030; }
@@ -383,7 +383,7 @@ export default function SquadView({
         .stat-value.highlight { color: #00c864; }
         .stat-value.yellow { color: #ffc800; }
         .stat-value.red { color: #ff5050; }
-        .stat-label { font-size: 8px; color: #4a5568; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
+        .stat-label { font-size: 8px; color: #8896a8; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
       `}</style>
 
       <div className="squad-section">

@@ -44,7 +44,7 @@ function LineupColumn({ players, subs, formation, side }: {
             display: 'flex', alignItems: 'center', gap: '6px',
             marginBottom: '4px', flexDirection: isAway ? 'row-reverse' : 'row',
           }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#2a3545', width: '16px', textAlign: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '16px', textAlign: 'center', flexShrink: 0 }}>
               {p.player_number}
             </span>
             <span style={{ fontSize: '11px', color: '#e8edf2', fontWeight: 500, textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
@@ -57,7 +57,7 @@ function LineupColumn({ players, subs, formation, side }: {
         <>
           <div style={{
             fontSize: '8px', fontWeight: 600, letterSpacing: '2px',
-            textTransform: 'uppercase' as const, color: '#2a3545',
+            textTransform: 'uppercase' as const, color: '#4a5568',
             marginBottom: '6px', textAlign: isAway ? 'right' : 'left',
           }}>Subs</div>
           {subs.map((p, i) => (
@@ -65,10 +65,10 @@ function LineupColumn({ players, subs, formation, side }: {
               display: 'flex', alignItems: 'center', gap: '6px',
               marginBottom: '4px', flexDirection: isAway ? 'row-reverse' : 'row',
             }}>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#2a3545', width: '16px', textAlign: 'center', flexShrink: 0 }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', width: '16px', textAlign: 'center', flexShrink: 0 }}>
                 {p.player_number}
               </span>
-              <span style={{ fontSize: '11px', color: '#4a5568', textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
+              <span style={{ fontSize: '11px', color: '#8896a8', textAlign: isAway ? 'right' : 'left', lineHeight: 1.2 }}>
                 {p.player_name}
               </span>
             </div>
@@ -339,10 +339,10 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   }
 
   const refRankColor = (rank: number | null): string => {
-    if (rank === null) return '#4a5568'
+    if (rank === null) return '#8896a8'
     if (rank <= 3) return '#00c864'
     if (rank <= 10) return '#ffc800'
-    return '#4a5568'
+    return '#8896a8'
   }
 
   const time = new Date(match.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -388,7 +388,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 .nav-item.active { opacity: 1; }
 .nav-icon { font-size: 18px; }
 .nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #00c864; }
-.nav-item:not(.active) .nav-label { color: #4a5568; }
+.nav-item:not(.active) .nav-label { color: #8896a8; }
         .back-bar { padding: 56px 24px 0; }
         .back-btn { font-size: 13px; color: #00c864; text-decoration: none; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
         .match-hero { padding: 24px; position: relative; }
@@ -396,23 +396,23 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .match-date { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 20px; font-weight: 600; text-align: center; }
         .teams-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
         .team-block { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-        .team-name { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #4a5568; text-align: center; line-height: 1.3; }
+        .team-name { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #8896a8; text-align: center; line-height: 1.3; }
         .stat-group { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; }
-        .stat-group-label { font-size: 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; text-align: center; }
+        .stat-group-label { font-size: 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8896a8; text-align: center; }
         .vs-block { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; flex-shrink: 0; width: 36px; padding-top: 60px; gap: 38px; }
         .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; animation: pulse 1.2s ease-in-out infinite; display: inline-block; margin-right: 4px; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
         .h2h-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
         .h2h-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #1a2030; }
-        .h2h-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; }
-        .h2h-date { font-size: 10px; color: #4a5568; }
+        .h2h-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; }
+        .h2h-date { font-size: 10px; color: #8896a8; }
         .h2h-score-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .h2h-team { font-size: 12px; font-weight: 600; color: #e8edf2; flex: 1; }
         .h2h-team.away { text-align: right; }
         .h2h-result { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #00c864; letter-spacing: 3px; flex-shrink: 0; }
         .ref-card { background: #0e1318; border: 1px solid #1a2030; border-radius: 10px; padding: 8px 14px; margin-bottom: 12px; }
         .ref-top { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #1a2030; min-width: 0; }
-        .ref-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; flex-shrink: 0; }
+        .ref-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8896a8; flex-shrink: 0; }
         .ref-name { font-size: 12px; font-weight: 600; color: #e8edf2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ref-stats { display: flex; align-items: flex-start; gap: 0; }
         .ref-stat { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 4px; }
@@ -420,7 +420,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         .ref-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #e8edf2; letter-spacing: 0.5px; line-height: 1; }
         .ref-stat-value.yellow { color: #ffc800; }
         .ref-stat-value.red { color: #ff5050; }
-        .ref-stat-label { font-size: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #4a5568; margin-top: 2px; }
+        .ref-stat-label { font-size: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #8896a8; margin-top: 2px; }
         .ref-stat-rank { font-size: 8px; font-weight: 700; margin-top: 2px; line-height: 1; }
       `}</style>
 
@@ -437,7 +437,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                 {homeLogo ? <img src={homeLogo} alt={match.home_team_name} style={logoStyle} /> : logoPlaceholder}
-                <div style={{ fontSize: '11px', fontWeight: 600, color: '#4a5568', textAlign: 'center', letterSpacing: '0.5px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#8896a8', textAlign: 'center', letterSpacing: '0.5px' }}>
                   {match.home_team_name}
                 </div>
               </div>
@@ -446,29 +446,29 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                   {match.goals_h ?? 0} - {match.goals_a ?? 0}
                 </div>
                 {match.ht_goals_h !== null && (
-                  <div style={{ fontSize: '10px', color: '#2a3545', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '2px' }}>
                     HT {match.ht_goals_h} - {match.ht_goals_a}
                   </div>
                 )}
-                <div style={{ fontSize: '10px', color: isInPlay ? '#ff4d4d' : '#4a5568', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: '10px', color: isInPlay ? '#ff4d4d' : '#8896a8', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {isInPlay && <span className="live-dot" />}
                   {scoreLabel}
                 </div>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                 {awayLogo ? <img src={awayLogo} alt={match.away_team_name} style={logoStyle} /> : logoPlaceholder}
-                <div style={{ fontSize: '11px', fontWeight: 600, color: '#4a5568', textAlign: 'center', letterSpacing: '0.5px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#8896a8', textAlign: 'center', letterSpacing: '0.5px' }}>
                   {match.away_team_name}
                 </div>
               </div>
             </div>
             {match.venue_name && (
-              <div style={{ textAlign: 'center', fontSize: '11px', color: '#2a3545', marginBottom: '6px' }}>
+              <div style={{ textAlign: 'center', fontSize: '11px', color: '#4a5568', marginBottom: '6px' }}>
                 📍 {match.venue_name}
               </div>
             )}
             {match.referee && (
-              <div style={{ textAlign: 'center', fontSize: '11px', color: '#2a3545' }}>
+              <div style={{ textAlign: 'center', fontSize: '11px', color: '#4a5568' }}>
                 🏁 {match.referee}
               </div>
             )}
@@ -492,7 +492,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
               </div>
 
               <div className="vs-block">
-                <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px', color: '#2a3545', letterSpacing: '1px' }}>VS</span>
+                <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '18px', color: '#4a5568', letterSpacing: '1px' }}>VS</span>
               </div>
 
               <div className="team-block">
@@ -588,7 +588,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             }}>Lineups</div>
             <div style={{ display: 'flex', gap: '1px', background: '#1a2030', borderRadius: '12px', overflow: 'hidden' }}>
               <div style={{ flex: 1, background: '#0e1318', padding: '14px 12px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', letterSpacing: '1px', marginBottom: '8px', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8896a8', letterSpacing: '1px', marginBottom: '8px', textTransform: 'uppercase' }}>
                   {match.home_team_name}
                 </div>
                 <LineupColumn
@@ -599,7 +599,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                 />
               </div>
               <div style={{ flex: 1, background: '#0e1318', padding: '14px 12px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', letterSpacing: '1px', marginBottom: '8px', textAlign: 'right', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8896a8', letterSpacing: '1px', marginBottom: '8px', textAlign: 'right', textTransform: 'uppercase' }}>
                   {match.away_team_name}
                 </div>
                 <LineupColumn
