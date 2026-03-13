@@ -26,7 +26,8 @@ export default function ComingSoonPage() {
     })
     setLoading(false)
     if (res.ok) {
-      setEmailSubmitted(true)
+      const data = await res.json()
+      router.push(data.redirect ?? '/lms')
     } else {
       const data = await res.json()
       setEmailError(data.error ?? 'Something went wrong')
