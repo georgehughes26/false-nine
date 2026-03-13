@@ -23,28 +23,28 @@ export const metadata = {
 
 export default async function Home() {
   const cookieStore = await cookies()
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        },
+        setAll: () => {},
       },
     }
   )
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Only fetch Pro status if logged in
   let isPro = false
   if (user) {
     const supabaseServer = await createSupabaseServer()
-    const { data: profile } = await supabaseServer.from('profiles').select('is_pro').eq('id', user.id).single()
+    const { data: profile } = await supabaseServer
+      .from('profiles')
+      .select('is_pro')
+      .eq('id', user.id)
+      .single()
     isPro = profile?.is_pro ?? false
   }
 
@@ -56,23 +56,6 @@ export default async function Home() {
 
   if (error) return <div>Error loading fixtures</div>
   if (!matches) return <div>No fixtures found</div>
-
-  const grouped: Record<string, typeof matches> = {}
-  for (const match of matches) {
-    const key = match.round ?? 'Unknown'
-    if (!grouped[key]) grouped[key] = []
-    grouped[key].push(match)
-  }
-
-  const now = new Date()
-  const upcomingGWs = [...new Set(
-    matches
-      .filter(m => m.goals_h === null)
-      .map(m => parseGW(m.round))
-      .filter(gw => gw > 0)
-  )].sort((a, b) => a - b)
-
-  const nextGW = upcomingGWs[0] ?? parseGW(matches[matches.length - 1]?.round)
 
   return <GWFilterPage matches={matches} isPro={isPro} />
 }
