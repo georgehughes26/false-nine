@@ -1,5 +1,5 @@
-import ComingSoonPage from '@/components/ComingSoonPage'
+import LMSLobby from './lobby'
 
 export default function LMSPage() {
-  return <ComingSoonPage />
+  return <LMSLobby />
 }

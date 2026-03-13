@@ -59,18 +59,19 @@ export default function CreateGame() {
     const fee = parseFloat(entryFee) || 0
 
     const { data: game, error: gameError } = await supabase
-      .from('lms_games')
-      .insert({
-        name: name.trim(),
-        code,
-        created_by: user.id,
-        is_public: isPublic,
-        entry_fee: fee,
-        pot: fee,
-        start_gw: startGw,
-      })
-      .select()
-      .single()
+    .from('lms_games')
+    .insert({
+      name: name.trim(),
+      code,
+      created_by: user.id,
+      is_public: isPublic,
+      entry_fee: fee,
+      pot: fee,
+      start_gw: startGw,
+      current_gw: startGw, // ← add this
+    })
+    .select()
+    .single()
 
     if (gameError) { setError(gameError.message); setLoading(false); return }
 

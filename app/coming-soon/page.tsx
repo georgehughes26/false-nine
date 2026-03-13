@@ -26,7 +26,7 @@ export default function ComingSoonPage() {
     })
     setLoading(false)
     if (res.ok) {
-      setEmailSubmitted(true)  // ← this is all it should do
+      window.location.href = '/lms'  // ← change this line
     } else {
       const data = await res.json()
       setEmailError(data.error ?? 'Something went wrong')
