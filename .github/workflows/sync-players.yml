@@ -1,0 +1,15 @@
+name: Sync Players
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday at 3am UTC
+  workflow_dispatch:
+
+jobs:
+  sync-players:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync Players
+        run: |
+          curl -X GET https://falsenineapp.com/api/sync-players \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
