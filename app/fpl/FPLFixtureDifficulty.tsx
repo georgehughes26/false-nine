@@ -51,9 +51,8 @@ const POSITION_SHORT: Record<string, string> = {
 
 function positionStats(pick: CaptainPick) {
   const pos = pick.position
-  
   let stats: { label: string, value: string | number }[] = []
-  
+
   if (pos === 'Goalkeeper') {
     stats = [
       { label: 'xSaves', value: pick.savesPerGame },
@@ -69,7 +68,7 @@ function positionStats(pick: CaptainPick) {
       { label: 'xAssists', value: pick.xA },
       { label: 'CS%', value: `${pick.csChance}%` },
       { label: 'xKey Passes', value: pick.keyPassesPerGame },
-      { label: 'Yellow Risk', value: pick.yellowRisk },
+      { label: 'xDefCon', value: pick.xDefCon },
       { label: 'xMins', value: pick.avgMins },
     ]
   } else if (pos === 'Midfielder') {
@@ -78,7 +77,7 @@ function positionStats(pick: CaptainPick) {
       { label: 'xAssists', value: pick.xA },
       { label: 'xSOTs', value: pick.sotPerGame },
       { label: 'xKey Passes', value: pick.keyPassesPerGame },
-      { label: 'Yellow Risk', value: pick.yellowRisk },
+      { label: 'xDefCon', value: pick.xDefCon },
       { label: 'xMins', value: pick.avgMins },
     ]
   } else {
@@ -87,16 +86,12 @@ function positionStats(pick: CaptainPick) {
       { label: 'xAssists', value: pick.xA },
       { label: 'xSOTs', value: pick.sotPerGame },
       { label: 'xKey Passes', value: pick.keyPassesPerGame },
-      { label: 'Yellow Risk', value: pick.yellowRisk },
+      { label: 'xDefCon', value: pick.xDefCon },
       { label: 'xMins', value: pick.avgMins },
     ]
   }
 
-  // Pad to always 6 items — real stats first, empty placeholders at the end
-  while (stats.length < 6) {
-    stats.push({ label: '', value: '' })
-  }
-
+  while (stats.length < 6) stats.push({ label: '', value: '' })
   return stats
 }
 
@@ -124,6 +119,15 @@ function CaptainCard({ pick, index }: { pick: CaptainPick, index: number }) {
   const xpColor = isMedal ? medal!.color : '#e8edf2'
   const stats = positionStats(pick)
 
+  const fplRow = [
+    { label: 'Price', value: pick.fplPrice ?? '—' },
+    { label: 'Own%', value: pick.fplOwnership ?? '—' },
+    { label: 'Form', value: pick.fplForm ?? '—' },
+    { label: 'Pts', value: pick.fplTotalPoints ?? '—' },
+    { label: 'Pen', value: pick.isPenaltyTaker ? '✓' : '—' },
+    { label: 'Set', value: pick.isSetPieceTaker ? '✓' : '—' },
+  ]
+
   return (
     <div style={{
       background: isMedal ? medal!.bg : '#0e1318',
@@ -135,7 +139,7 @@ function CaptainCard({ pick, index }: { pick: CaptainPick, index: number }) {
       alignItems: 'center',
       gap: '10px',
     }}>
-      {/* Left — rank */}
+      {/* Rank */}
       <div style={{
         width: '22px', flexShrink: 0, textAlign: 'center',
         fontSize: isMedal ? '16px' : '11px',
@@ -145,52 +149,74 @@ function CaptainCard({ pick, index }: { pick: CaptainPick, index: number }) {
         {isMedal ? medal!.emoji : pick.rank}
       </div>
 
-      {/* Middle — player info + stats */}
-{/* Middle — player info + stats */}
-{/* Middle — player info + stats */}
-<div style={{ flex: 1, minWidth: 0 }}>
-<div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', marginLeft: '3%' }}>
-    <span style={{
-      fontSize: '13px', fontWeight: 600, color: '#e8edf2',
-      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px',
-    }}>
-      {pick.playerName}
-    </span>
-    <span style={{
-      fontSize: '9px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px',
-      background: '#1a2030', color: '#8896a8', flexShrink: 0,
-    }}>
-      {POSITION_SHORT[pick.position] ?? pick.position}
-    </span>
-    <span style={{ fontSize: '10px', color: '#8896a8', flexShrink: 0 }}>
-      {pick.teamCode}
-    </span>
-    <FixtureBadge
-      opponentCode={pick.opponentCode}
-      isHome={pick.isHome}
-      difficulty={pick.difficulty}
-    />
-  </div>
+      {/* Middle */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Name row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', marginLeft: '3%' }}>
+          <span style={{
+            fontSize: '13px', fontWeight: 600, color: '#e8edf2',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '130px',
+          }}>
+            {pick.playerName}
+          </span>
+          <span style={{
+            fontSize: '9px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px',
+            background: '#1a2030', color: '#8896a8', flexShrink: 0,
+          }}>
+            {POSITION_SHORT[pick.position] ?? pick.position}
+          </span>
+          <span style={{ fontSize: '10px', color: '#8896a8', flexShrink: 0 }}>
+            {pick.teamCode}
+          </span>
+          <FixtureBadge
+            opponentCode={pick.opponentCode}
+            isHome={pick.isHome}
+            difficulty={pick.difficulty}
+          />
+        </div>
 
-{/* Stats row */}
-<div style={{ display: 'flex', gap: '0px', marginTop: '6px' }}>
-  {stats.map(s => (
-    <div key={s.label} style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{
-        fontSize: '8px', color: '#8896a8', textTransform: 'uppercase',
-        letterSpacing: '0.3px', lineHeight: 1, marginBottom: '2px',
-      }}>
-        {s.label}
-      </div>
-      <div style={{ fontSize: '11px', fontWeight: 600, color: '#a0aec0', lineHeight: 1 }}>
-        {s.value}
-      </div>
-    </div>
-  ))}
-</div>
+        {/* FPL row */}
+        <div style={{ display: 'flex', gap: '0px', marginBottom: '6px' }}>
+          {fplRow.map((s, i) => (
+            <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{
+                fontSize: '8px', color: '#8896a8', textTransform: 'uppercase',
+                letterSpacing: '0.3px', lineHeight: 1, marginBottom: '2px',
+              }}>
+                {s.label}
+              </div>
+              <div style={{
+                fontSize: '11px', fontWeight: 600, lineHeight: 1,
+                color: i === 4 && pick.isPenaltyTaker ? '#00c864'
+                  : i === 5 && pick.isSetPieceTaker ? '#ffc800'
+                  : i === 2 && pick.fplForm && parseFloat(pick.fplForm) >= 6 ? '#00c864'
+                  : '#a0aec0',
+              }}>
+                {s.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Stats row */}
+        <div style={{ display: 'flex', gap: '0px' }}>
+          {stats.map((s, i) => (
+            <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{
+                fontSize: '8px', color: '#8896a8', textTransform: 'uppercase',
+                letterSpacing: '0.3px', lineHeight: 1, marginBottom: '2px',
+              }}>
+                {s.label}
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#a0aec0', lineHeight: 1 }}>
+                {s.value}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Right — xP */}
+      {/* xP */}
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <div style={{
           fontFamily: "'Bebas Neue', sans-serif",
@@ -263,13 +289,11 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
         .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; background: radial-gradient(ellipse at 50% -20%, rgba(0,200,100,0.15) 0%, transparent 70%); pointer-events: none; }
         .logo { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 4px; color: #00c864; text-transform: uppercase; margin-bottom: 4px; }
         .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; line-height: 1; color: #ffffff; }
-        .subtitle { font-size: 13px; color: #8896a8; margin-top: 6px; font-weight: 300; }
-        .toggle-bar { display: flex; gap: 6px; padding: 16px 24px 4px; }
+        .toggle-bar { display: flex; gap: 6px; padding: 8px 24px 4px; }
         .toggle-btn { flex: 1; padding: 9px 6px; border-radius: 8px; border: 1px solid #1a2030; background: #0e1318; color: #8896a8; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
         .toggle-btn.active { background: #00c864; color: #080c10; border-color: #00c864; }
         .legend { display: flex; gap: 8px; padding: 10px 24px; flex-wrap: wrap; }
         .legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #8896a8; }
-        .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
         .table-wrap { padding: 0 16px 100px; overflow-x: auto; }
         .fdr-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; min-width: 340px; }
         .th { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8896a8; padding: 4px 4px 8px; text-align: center; }
@@ -277,7 +301,6 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
         .team-cell { font-size: 13px; font-weight: 500; color: #e8edf2; padding: 4px 12px 4px 0; white-space: nowrap; min-width: 130px; }
         .gw-cell { padding: 2px; }
         .captain-wrap { padding: 0 16px 100px; }
-        .captain-header { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #00c864; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,200,100,0.15); }
         .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(8,12,16,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1a2030; display: flex; padding: 12px 0 24px; z-index: 50; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
@@ -291,11 +314,6 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
         <div className="header">
           <div className="logo">False Nine</div>
           <div className="page-title">FPL Hub</div>
-          <div className="subtitle">
-            {mode === 'fdr' && 'Fixture Difficulty Rating — Next 5 GWs'}
-            {mode === 'cs' && 'Clean Sheet Probability — Next 5 GWs'}
-            {mode === 'captain' && `The Best Captain Picks — GW${nextGW}`}
-          </div>
         </div>
 
         <div className="toggle-bar">
@@ -321,7 +339,7 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
                 { label: 'Very Hard', bg: 'rgba(255,80,80,0.4)' },
               ].map(({ label, bg }) => (
                 <div key={label} className="legend-item">
-                  <div className="legend-dot" style={{ background: bg }} />
+                  <div style={{ background: bg, width: '8px', height: '8px', borderRadius: '2px', flexShrink: 0 }} />
                   {label}
                 </div>
               ))
@@ -332,7 +350,7 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
                 { label: 'Low (<20%)', bg: 'rgba(255,80,80,0.4)' },
               ].map(({ label, bg }) => (
                 <div key={label} className="legend-item">
-                  <div className="legend-dot" style={{ background: bg }} />
+                  <div style={{ background: bg, width: '8px', height: '8px', borderRadius: '2px', flexShrink: 0 }} />
                   {label}
                 </div>
               ))
@@ -340,22 +358,23 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
           </div>
         )}
 
-{mode === 'captain' && (
-  <div style={{ display: 'flex', gap: '12px', padding: '8px 24px 4px', flexWrap: 'wrap' }}>
-    {[
-      { label: 'x = Expected' },
-      { label: 'CS = Clean Sheet' },
-      { label: 'SOT = Shots on Target' },
-      { label: 'PTS = Points' },
-      
-    ].map(({ label }) => (
-      <div key={label} style={{ fontSize: '10px', color: '#8896a8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <div style={{ width: '6px', height: '6px', borderRadius: '1px', background: '#1a2030', flexShrink: 0 }} />
-        {label}
-      </div>
-    ))}
-  </div>
-)}
+        {mode === 'captain' && (
+          <div style={{ display: 'flex', gap: '12px', padding: '8px 24px 4px', flexWrap: 'wrap' }}>
+            {[
+              { label: 'x = Expected' },
+              { label: 'CS = Clean Sheet' },
+              { label: 'SOT = Shots on Target' },
+              { label: 'DefCon = Defensive Contributions' },
+              { label: 'PEN = Penalty Taker' },
+              { label: 'SET = Set Piece Taker' },
+            ].map(({ label }) => (
+              <div key={label} style={{ fontSize: '10px', color: '#8896a8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '1px', background: '#1a2030', flexShrink: 0 }} />
+                {label}
+              </div>
+            ))}
+          </div>
+        )}
 
         {mode === 'captain' ? (
           <div className="captain-wrap">
@@ -375,42 +394,39 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
                 </tr>
               </thead>
               <tbody>
-              {(() => {
-  const sorted = [...teams].sort((a, b) => {
-    if (mode === 'fdr') {
-      const avgDiffA = a.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (a.fixtures.length || 1)
-      const avgDiffB = b.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (b.fixtures.length || 1)
-      if (avgDiffA !== avgDiffB) return avgDiffA - avgDiffB
-      // Tiebreak: higher CS% = better
-      const avgCSA = a.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (a.fixtures.length || 1)
-      const avgCSB = b.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (b.fixtures.length || 1)
-      return avgCSB - avgCSA
-    } else {
-      // CS view — highest average CS% first
-      const avgCSA = a.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (a.fixtures.length || 1)
-      const avgCSB = b.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (b.fixtures.length || 1)
-      if (avgCSA !== avgCSB) return avgCSB - avgCSA
-      // Tiebreak: lower difficulty = better
-      const avgDiffA = a.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (a.fixtures.length || 1)
-      const avgDiffB = b.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (b.fixtures.length || 1)
-      return avgDiffA - avgDiffB
-    }
-  })
+                {(() => {
+                  const sorted = [...teams].sort((a, b) => {
+                    if (mode === 'fdr') {
+                      const avgDiffA = a.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (a.fixtures.length || 1)
+                      const avgDiffB = b.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (b.fixtures.length || 1)
+                      if (avgDiffA !== avgDiffB) return avgDiffA - avgDiffB
+                      const avgCSA = a.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (a.fixtures.length || 1)
+                      const avgCSB = b.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (b.fixtures.length || 1)
+                      return avgCSB - avgCSA
+                    } else {
+                      const avgCSA = a.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (a.fixtures.length || 1)
+                      const avgCSB = b.fixtures.reduce((sum, f) => sum + f.csChance, 0) / (b.fixtures.length || 1)
+                      if (avgCSA !== avgCSB) return avgCSB - avgCSA
+                      const avgDiffA = a.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (a.fixtures.length || 1)
+                      const avgDiffB = b.fixtures.reduce((sum, f) => sum + f.difficulty, 0) / (b.fixtures.length || 1)
+                      return avgDiffA - avgDiffB
+                    }
+                  })
 
-  return sorted.map(team => (
-    <tr key={team.teamName}>
-      <td className="team-cell">{team.teamName}</td>
-      {upcomingGWs.map(gw => {
-        const fixture = team.fixtures.find(f => f.gw === gw)
-        return (
-          <td key={gw} className="gw-cell">
-            <DifficultyCell fixture={fixture} mode={mode} />
-          </td>
-        )
-      })}
-    </tr>
-  ))
-})()}
+                  return sorted.map(team => (
+                    <tr key={team.teamName}>
+                      <td className="team-cell">{team.teamName}</td>
+                      {upcomingGWs.map(gw => {
+                        const fixture = team.fixtures.find(f => f.gw === gw)
+                        return (
+                          <td key={gw} className="gw-cell">
+                            <DifficultyCell fixture={fixture} mode={mode} />
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))
+                })()}
               </tbody>
             </table>
           </div>

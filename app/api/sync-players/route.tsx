@@ -12,6 +12,16 @@ const supabase = createClient(
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms))
 
+function decodeHtml(str: string | null | undefined): string | null {
+  if (!str) return null
+  return str
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
 async function apiFetch(path: string) {
   const res = await fetch(`https://v3.football.api-sports.io/${path}`, {
     headers: { 'x-apisports-key': API_KEY },
@@ -20,12 +30,10 @@ async function apiFetch(path: string) {
 }
 
 async function syncPlayers(leagueId: number): Promise<number> {
-  // Fetch first page to get total pages
   const firstData = await apiFetch(`players?league=${leagueId}&season=${SEASON}&page=1`)
   const totalPages = firstData.paging?.total ?? 1
   const allPlayers = [...(firstData.response ?? [])]
 
-  // Fetch remaining pages
   for (let page = 2; page <= totalPages; page++) {
     await delay(350)
     const data = await apiFetch(`players?league=${leagueId}&season=${SEASON}&page=${page}`)
@@ -33,7 +41,6 @@ async function syncPlayers(leagueId: number): Promise<number> {
   }
 
   const rows = allPlayers.map((p: any) => {
-    // Use last statistics entry — most recent team for transferred players
     const stats = p.statistics?.[p.statistics.length - 1]
     if (!stats) return null
 
@@ -41,16 +48,16 @@ async function syncPlayers(leagueId: number): Promise<number> {
       player_id:              p.player.id,
       league_id:              leagueId,
       team_id:                stats.team.id,
-      team_name:              stats.team.name,
+      team_name:              decodeHtml(stats.team.name) ?? stats.team.name,
       season:                 SEASON,
-      name:                   p.player.name,
-      firstname:              p.player.firstname ?? null,
-      lastname:               p.player.lastname ?? null,
+      name:                   decodeHtml(p.player.name) ?? p.player.name,
+      firstname:              decodeHtml(p.player.firstname),
+      lastname:               decodeHtml(p.player.lastname),
       age:                    p.player.age ?? null,
       birth_date:             p.player.birth?.date ?? null,
-      birth_place:            p.player.birth?.place ?? null,
-      birth_country:          p.player.birth?.country ?? null,
-      nationality:            p.player.nationality ?? null,
+      birth_place:            decodeHtml(p.player.birth?.place),
+      birth_country:          decodeHtml(p.player.birth?.country),
+      nationality:            decodeHtml(p.player.nationality),
       height:                 p.player.height ?? null,
       weight:                 p.player.weight ?? null,
       photo:                  p.player.photo ?? null,
@@ -89,7 +96,6 @@ async function syncPlayers(leagueId: number): Promise<number> {
     }
   }).filter(Boolean)
 
-  // Upsert in batches of 500
   const batchSize = 500
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize)

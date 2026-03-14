@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import FPLFixtureDifficulty from './FPLFixtureDifficulty'
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 function parseForm(form: string | null): number {
   if (!form) return 0.5
   const results = form.split('').slice(-5)
@@ -43,69 +45,198 @@ function csPoints(position: string): number {
   return 0
 }
 
-function fullName(player: any): string {
-  return player.name ?? 'Unknown'
+function normalizeName(name: string): string {
+  return name
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z\s]/g, '')
+    .trim()
 }
 
-function computeXP(player: any, teamExpectedGoals: number, oppExpectedGoals: number, isHome: boolean) {
+function matchFPLPlayer(playerName: string, fplMap: Map<string, any>): any | null {
+  const normalized = normalizeName(playerName)
+  if (fplMap.has(normalized)) return fplMap.get(normalized)
+  const surname = normalized.split(' ').slice(-1)[0]
+  for (const [key, fpl] of fplMap) {
+    if (key.includes(surname)) return fpl
+  }
+  return null
+}
+
+// ─── xP Model ───────────────────────────────────────────────────────────────
+
+function computeXP(
+  player: any,
+  fpl: any | null,
+  teamExpectedGoals: number,
+  oppExpectedGoals: number,
+  isHome: boolean,
+  leagueAvgGF: number,
+  leagueAvgGA: number,
+) {
   const games = player.games || 1
   const minutes = player.minutes || 0
   const position = player.position ?? 'Attacker'
-  const avgMins = minutes / games
+  const avgMins = Math.min(minutes / games, 90)
   if (avgMins < 60) return null
 
-  const appearancePts = avgMins >= 60 ? 2 : 1
+  if (fpl) {
+    if (fpl.status === 'i' || fpl.status === 'u') return null
+    const chanceOfPlaying = fpl.chance_of_playing_next_round
+    if (chanceOfPlaying !== null && chanceOfPlaying < 50) return null
+    if (parseFloat(fpl.ep_next) < 1.9) return null
+  }
 
-  const sotPerGame = (player.shots_on || 0) / games
-  const historicalConversion = player.shots_on > 0 ? (player.goals || 0) / player.shots_on : 0.1
-  const xgPerGame = sotPerGame * Math.max(historicalConversion, 0.08)
-  const teamXgScalar = teamExpectedGoals / Math.max(teamExpectedGoals, 0.5)
-  const fixtureXG = xgPerGame * teamXgScalar * (isHome ? 1.1 : 1.0)
+  const minutesScalar = avgMins / 90
+  const appearancePts = 2
+
+  // xG
+  let fixtureXG: number
+  if (fpl && parseFloat(fpl.expected_goals_per_90) > 0) {
+    const fplXGPer90 = parseFloat(fpl.expected_goals_per_90)
+    const fixtureScalar = teamExpectedGoals / Math.max(leagueAvgGF, 0.5)
+    fixtureXG = fplXGPer90 * fixtureScalar * minutesScalar * (isHome ? 1.1 : 1.0)
+  } else {
+    const sotPerGame = (player.shots_on || 0) / games
+    const historicalConversion = player.shots_on > 0 ? (player.goals || 0) / player.shots_on : 0.1
+    const xgPerGame = sotPerGame * Math.max(historicalConversion, 0.08)
+    const teamXgScalar = teamExpectedGoals / Math.max(leagueAvgGF, 0.5)
+    fixtureXG = xgPerGame * teamXgScalar * (isHome ? 1.1 : 1.0)
+  }
   const xGoalPts = fixtureXG * goalPoints(position)
 
-  const keyPassesPerGame = (player.passes_key || 0) / games
-  const xAssistRate = keyPassesPerGame * 0.2
-  const xAssistPts = xAssistRate * 3
+  // xA
+  let fixtureXA: number
+  if (fpl && parseFloat(fpl.expected_assists_per_90) > 0) {
+    const fplXAPer90 = parseFloat(fpl.expected_assists_per_90)
+    const fixtureScalar = teamExpectedGoals / Math.max(leagueAvgGF, 0.5)
+    fixtureXA = fplXAPer90 * fixtureScalar * minutesScalar * (isHome ? 1.1 : 1.0)
+  } else {
+    const keyPassesPerGame = (player.passes_key || 0) / games
+    fixtureXA = keyPassesPerGame * 0.2
+  }
+  const xAssistPts = fixtureXA * 3
 
-  const csPct = cleanSheetProbability(oppExpectedGoals) / 100
-  const xCSPts = csPct * csPoints(position)
+  // Clean sheet
+  const poissonCS = cleanSheetProbability(oppExpectedGoals) / 100
+  let blendedCS = poissonCS
+  if (fpl && parseFloat(fpl.clean_sheets_per_90) > 0) {
+    const fplCSPer90 = parseFloat(fpl.clean_sheets_per_90)
+    blendedCS = (poissonCS * 0.6) + (fplCSPer90 * 0.4)
+  }
+  const xCSPts = blendedCS * csPoints(position)
 
-  const xGCPts = (position === 'Goalkeeper' || position === 'Defender')
-    ? -(oppExpectedGoals / 2) * 1 : 0
+  // Goals conceded (GK/DEF)
+  let xGCPts = 0
+  if (position === 'Goalkeeper' || position === 'Defender') {
+    if (fpl && parseFloat(fpl.expected_goals_conceded_per_90) > 0) {
+      const fplXGCPer90 = parseFloat(fpl.expected_goals_conceded_per_90)
+      const fixtureScalar = oppExpectedGoals / Math.max(leagueAvgGA, 0.5)
+      xGCPts = -((fplXGCPer90 * fixtureScalar * minutesScalar) / 2)
+    } else {
+      xGCPts = -(oppExpectedGoals / 2)
+    }
+  }
 
+  // Saves (GK)
+  let xSavePts = 0
+  if (position === 'Goalkeeper') {
+    const savesBase = fpl && parseFloat(fpl.saves_per_90) > 0
+      ? parseFloat(fpl.saves_per_90)
+      : (player.saves || 0) / games
+    const fixtureScalar = oppExpectedGoals / Math.max(leagueAvgGA, 0.5)
+    xSavePts = (savesBase * fixtureScalar * minutesScalar) / 3
+  }
+
+  // Set piece bonus
+  let setPiecePts = 0
+  if (fpl) {
+    if (fpl.penalties_order === 1) {
+      setPiecePts += (teamExpectedGoals * 0.15) * goalPoints(position)
+    }
+    if (fpl.corners_and_indirect_freekicks_order === 1) {
+      setPiecePts += fixtureXA * 0.15
+    }
+  }
+
+  // Yellow/red cards
   const yellowPerGame = (player.yellow_cards || 0) / games
   const xYellowPts = yellowPerGame * -1
-
   const redPerGame = (player.red_cards || 0) / games
   const xRedPts = redPerGame * -3
 
-  const savesPerGame = (player.saves || 0) / games
-  const xSavePts = position === 'Goalkeeper' ? savesPerGame / 3 : 0
+  // Defensive contribution — all outfield, not GK
+  // No fixtureScalar — defensive contributions happen regardless of opponent strength
+  let xDefPts = 0
+  let xDefCon = 0
+  if (position !== 'Goalkeeper') {
+    const threshold = position === 'Defender' ? 10 : 12
+    if (fpl && parseFloat(fpl.defensive_contribution_per_90) > 0) {
+      const fplDefPer90 = parseFloat(fpl.defensive_contribution_per_90)
+      const expectedDefContrib = fplDefPer90 * minutesScalar
+      xDefPts = expectedDefContrib / threshold
+      xDefCon = parseFloat(expectedDefContrib.toFixed(2))
+    } else {
+      const tacklesPerGame = (player.tackles_total || 0) / games
+      xDefPts = tacklesPerGame / threshold
+      xDefCon = parseFloat(tacklesPerGame.toFixed(2))
+    }
+  }
+
+  // FPL form boost
+  let formBoost = 0
+  if (fpl && parseFloat(fpl.form) > 0) {
+    formBoost = (parseFloat(fpl.form) / 10) * 0.2
+  }
+
+  // ICT tiebreaker
+  let ictBoost = 0
+  if (fpl && parseFloat(fpl.ict_index) > 0) {
+    ictBoost = (parseFloat(fpl.ict_index) / 100) * 0.1
+  }
+
+  // Availability scalar
+  let availabilityScalar = 1.0
+  if (fpl?.chance_of_playing_next_round != null) {
+    availabilityScalar = fpl.chance_of_playing_next_round / 100
+  }
+
+  const total = (
+    appearancePts + xGoalPts + xAssistPts + xCSPts + xGCPts +
+    xSavePts + setPiecePts + xYellowPts + xRedPts + xDefPts +
+    formBoost + ictBoost
+  ) * availabilityScalar
 
   const tacklesPerGame = (player.tackles_total || 0) / games
-  const xDefPts = (position === 'Goalkeeper' || position === 'Defender')
-    ? tacklesPerGame * 0.15 : 0
-
-  const penScoredPerGame = (player.penalty_scored || 0) / games
-  const penMissedPerGame = (player.penalty_missed || 0) / games
-  const xPenPts = (penScoredPerGame * goalPoints(position)) + (penMissedPerGame * -2)
-
-  const total = appearancePts + xGoalPts + xAssistPts + xCSPts + xGCPts +
-    xYellowPts + xRedPts + xSavePts + xDefPts + xPenPts
 
   return {
     xP: Math.max(0, parseFloat(total.toFixed(1))),
     fixtureXG: parseFloat(fixtureXG.toFixed(2)),
-    xAssistRate: parseFloat(xAssistRate.toFixed(2)),
-    sotPerGame: parseFloat(sotPerGame.toFixed(2)),
+    xAssistRate: parseFloat(fixtureXA.toFixed(2)),
+    xDefCon,
+    sotPerGame: parseFloat(((player.shots_on || 0) / games).toFixed(2)),
     shotsPerGame: parseFloat(((player.shots_total || 0) / games).toFixed(2)),
-    savesPerGame: parseFloat(savesPerGame.toFixed(2)),
+    savesPerGame: parseFloat(((player.saves || 0) / games).toFixed(2)),
     tacklesPerGame: parseFloat(tacklesPerGame.toFixed(2)),
-    keyPassesPerGame: parseFloat(keyPassesPerGame.toFixed(2)),
+    keyPassesPerGame: parseFloat(((player.passes_key || 0) / games).toFixed(2)),
     yellowRisk: parseFloat(yellowPerGame.toFixed(2)),
     avgMins: Math.round(avgMins),
+    fplPrice: fpl ? `£${(fpl.now_cost / 10).toFixed(1)}m` : null,
+    fplOwnership: fpl ? `${fpl.selected_by_percent}%` : null,
+    fplForm: fpl ? fpl.form : null,
+    fplTotalPoints: fpl ? fpl.total_points : null,
+    isPenaltyTaker: fpl?.penalties_order === 1,
+    isSetPieceTaker: fpl?.corners_and_indirect_freekicks_order === 1,
   }
 }
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface TeamStats {
   teamName: string
@@ -135,8 +266,8 @@ export interface CaptainPick {
   xP: number
   xG: number
   xA: number
+  xDefCon: number
   csChance: number
-  // position-specific stats
   sotPerGame: number
   shotsPerGame: number
   savesPerGame: number
@@ -144,7 +275,15 @@ export interface CaptainPick {
   keyPassesPerGame: number
   yellowRisk: number
   avgMins: number
+  fplPrice: string | null
+  fplOwnership: string | null
+  fplForm: string | null
+  fplTotalPoints: number | null
+  isPenaltyTaker: boolean
+  isSetPieceTaker: boolean
 }
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default async function FPLPage() {
   const cookieStore = await cookies()
@@ -166,18 +305,41 @@ export default async function FPLPage() {
     { data: teams },
     { data: xgMatches },
     { data: players },
+    fplBootstrap,
   ] = await Promise.all([
     supabase.from('standings').select('*').eq('league_id', 39).eq('season', 2025).order('rank', { ascending: true }),
     supabase.from('matches').select('fixture_id, round, datetime, home_team_id, home_team_name, away_team_id, away_team_name, goals_h, goals_a, home_xg, away_xg').eq('league_id', 39).order('datetime', { ascending: true }),
     supabase.from('teams').select('team_id, code').eq('league_id', 39).eq('season', 2025),
     supabase.from('matches').select('home_team_id, away_team_id, home_xg, away_xg').eq('league_id', 39).eq('season', 2025).not('home_xg', 'is', null),
     supabase.from('players').select('*').eq('league_id', 39).eq('season', 2025).gt('minutes', 540).gt('games', 5),
+    fetch('https://fantasy.premierleague.com/api/bootstrap-static/').then(r => r.json()).catch(() => null),
   ])
 
   if (!standings || !allMatches) return <div>Error loading data</div>
 
+  const fplPlayerMap = new Map<string, any>()
+  if (fplBootstrap?.elements) {
+    for (const el of fplBootstrap.elements) {
+      fplPlayerMap.set(normalizeName(`${el.first_name} ${el.second_name}`), el)
+      fplPlayerMap.set(normalizeName(el.web_name), el)
+    }
+  }
+
+  const fplTeamShortMap = new Map<string, string>()
+  if (fplBootstrap?.teams) {
+    for (const t of fplBootstrap.teams) {
+      fplTeamShortMap.set(normalizeName(t.name), t.short_name)
+    }
+  }
+
   const teamCodeMap: Record<number, string> = {}
   teams?.forEach((t: any) => { teamCodeMap[t.team_id] = t.code })
+
+  function getTeamCode(teamId: number, teamName: string): string {
+    return fplTeamShortMap.get(normalizeName(teamName))
+      ?? teamCodeMap[teamId]
+      ?? teamName.substring(0, 3).toUpperCase()
+  }
 
   const gwMap: Record<number, any[]> = {}
   allMatches.forEach((m: any) => {
@@ -245,7 +407,7 @@ export default async function FPLPage() {
 
     teamStatsMap[id] = {
       teamName: s.team_name,
-      teamCode: teamCodeMap[id] ?? s.team_name.substring(0, 3).toUpperCase(),
+      teamCode: getTeamCode(id, s.team_name),
       rank: s.rank,
       goalsForPerGame: s.goals_for / played,
       goalsAgainstPerGame: s.goals_against / played,
@@ -285,7 +447,6 @@ export default async function FPLPage() {
     }
   }
 
-  // Build FDR fixture list
   const teamFixtures: Record<number, {
     teamName: string
     teamCode: string
@@ -326,14 +487,16 @@ export default async function FPLPage() {
 
       if (teamFixtures[m.home_team_id]) {
         teamFixtures[m.home_team_id].fixtures.push({
-          gw, opponent: m.away_team_name, opponentCode: awayStats.teamCode,
+          gw, opponent: m.away_team_name,
+          opponentCode: getTeamCode(m.away_team_id, m.away_team_name),
           isHome: true, difficulty: xgdToRating(homeExpected - awayExpected),
           csChance: homeCSChance, csRating: csToRating(homeCSChance), datetime: m.datetime,
         })
       }
       if (teamFixtures[m.away_team_id]) {
         teamFixtures[m.away_team_id].fixtures.push({
-          gw, opponent: m.home_team_name, opponentCode: homeStats.teamCode,
+          gw, opponent: m.home_team_name,
+          opponentCode: getTeamCode(m.home_team_id, m.home_team_name),
           isHome: false, difficulty: xgdToRating(awayExpected - homeExpected),
           csChance: awayCSChance, csRating: csToRating(awayCSChance), datetime: m.datetime,
         })
@@ -345,7 +508,6 @@ export default async function FPLPage() {
     .filter(t => t.fixtures.length > 0)
     .sort((a, b) => a.rank - b.rank)
 
-  // Build captain picks for next GW
   const nextGWMatches = gwMap[nextGW]?.filter((m: any) => m.goals_h === null) ?? []
 
   const teamFixtureContext: Record<number, {
@@ -365,13 +527,13 @@ export default async function FPLPage() {
     if (!homeStats || !awayStats) return
 
     teamFixtureContext[m.home_team_id] = {
-      opponent: m.away_team_name, opponentCode: awayStats.teamCode,
+      opponent: m.away_team_name, opponentCode: getTeamCode(m.away_team_id, m.away_team_name),
       isHome: true, teamExpectedGoals: homeExpected, oppExpectedGoals: awayExpected,
       csChance: cleanSheetProbability(awayExpected),
       difficulty: xgdToRating(homeExpected - awayExpected),
     }
     teamFixtureContext[m.away_team_id] = {
-      opponent: m.home_team_name, opponentCode: homeStats.teamCode,
+      opponent: m.home_team_name, opponentCode: getTeamCode(m.home_team_id, m.home_team_name),
       isHome: false, teamExpectedGoals: awayExpected, oppExpectedGoals: homeExpected,
       csChance: cleanSheetProbability(homeExpected),
       difficulty: xgdToRating(awayExpected - homeExpected),
@@ -384,14 +546,20 @@ export default async function FPLPage() {
     const ctx = teamFixtureContext[player.team_id]
     if (!ctx) return
 
-    const result = computeXP(player, ctx.teamExpectedGoals, ctx.oppExpectedGoals, ctx.isHome)
+    const fplPlayer = matchFPLPlayer(player.name, fplPlayerMap)
+
+    const result = computeXP(
+      player, fplPlayer,
+      ctx.teamExpectedGoals, ctx.oppExpectedGoals,
+      ctx.isHome, leagueAvgGF, leagueAvgGA,
+    )
     if (!result) return
 
     captainPicks.push({
       rank: 0,
-      playerName: fullName(player),
+      playerName: player.name,
       teamName: player.team_name,
-      teamCode: teamCodeMap[player.team_id] ?? player.team_name.substring(0, 3).toUpperCase(),
+      teamCode: getTeamCode(player.team_id, player.team_name),
       position: player.position ?? 'Attacker',
       opponent: ctx.opponent,
       opponentCode: ctx.opponentCode,
@@ -400,6 +568,7 @@ export default async function FPLPage() {
       xP: result.xP,
       xG: result.fixtureXG,
       xA: result.xAssistRate,
+      xDefCon: result.xDefCon,
       csChance: ctx.csChance,
       sotPerGame: result.sotPerGame,
       shotsPerGame: result.shotsPerGame,
@@ -408,12 +577,31 @@ export default async function FPLPage() {
       keyPassesPerGame: result.keyPassesPerGame,
       yellowRisk: result.yellowRisk,
       avgMins: result.avgMins,
+      fplPrice: result.fplPrice,
+      fplOwnership: result.fplOwnership,
+      fplForm: result.fplForm,
+      fplTotalPoints: result.fplTotalPoints,
+      isPenaltyTaker: result.isPenaltyTaker,
+      isSetPieceTaker: result.isSetPieceTaker,
     })
   })
 
+  const unmapped = players?.filter((player: any) => {
+    const ctx = teamFixtureContext[player.team_id]
+    if (!ctx) return false
+    const avgMins = (player.minutes || 0) / (player.games || 1)
+    if (avgMins < 60) return false
+    return !matchFPLPlayer(player.name, fplPlayerMap)
+  }) ?? []
+
+  if (unmapped.length > 0) {
+    console.log('⚠️ Unmapped FPL players:')
+    unmapped.forEach((p: any) => console.log(`  - ${p.name} (${p.team_name})`))
+  }
+
   const top10 = captainPicks
     .sort((a, b) => b.xP - a.xP)
-    .slice(0, 10)
+    .slice(0, 20)
     .map((p, i) => ({ ...p, rank: i + 1 }))
 
   return (
