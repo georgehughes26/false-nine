@@ -179,8 +179,7 @@ function computeXP({
   }
 
   // ── Defensive contribution ────────────────────────────────────────────────
-  const truDefConPer90 = mins90 > 0 ? defConRaw / mins90 : 0
-  const defConPerGame  = truDefConPer90 * minsRatio
+  const defConPerGame = defConRaw * minsRatio
   let def_xP = 0
   if (position === 'Defender') {
     def_xP = (defConPerGame / 10) * 2
@@ -229,7 +228,10 @@ export default async function FPLPage() {
     supabase.from('matches').select('fixture_id, round, datetime, home_team_id, home_team_name, away_team_id, away_team_name, goals_h, goals_a, home_xg, away_xg').eq('league_id', 39).order('datetime', { ascending: true }),
     supabase.from('teams').select('team_id, code').eq('league_id', 39).eq('season', 2025),
     supabase.from('matches').select('home_team_id, away_team_id, home_xg, away_xg').eq('league_id', 39).eq('season', 2025).not('home_xg', 'is', null),
-    fetch('https://fantasy.premierleague.com/api/bootstrap-static/').then(r => r.json()).catch(() => null),
+    fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+      next: { revalidate: 3600 },
+    }).then(r => r.json()).catch(() => null),
   ])
 
   if (!standings || !allMatches || !fplBootstrap) return <div>Error loading data</div>
@@ -442,7 +444,10 @@ export default async function FPLPage() {
   // ── Captain picks ─────────────────────────────────────────────────────────
 
   const fplFixtures: any[] = await fetch(
-    `https://fantasy.premierleague.com/api/fixtures/?event=${nextGW}`
+    `https://fantasy.premierleague.com/api/fixtures/?event=${nextGW}`,
+    {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+    }
   ).then(r => r.json()).catch(() => [])
 
   const fixtureContext: Record<number, {
@@ -537,17 +542,15 @@ export default async function FPLPage() {
 
     // 50/50 blend with FPL's own ep_next
     const epNext   = parseFloat(el.ep_next) || 0
-    const blendedXP = parseFloat(((ourXP * 0.6) + (epNext * 0.4)).toFixed(1))
+    const blendedXP = parseFloat(((ourXP * 0.7) + (epNext * 0.3)).toFixed(1))
 
     // ── Display stats ─────────────────────────────────────────────────────
     const costInM    = nowCost / 10
     const totalPts   = el.total_points ?? 0
     const ptsPerCost = costInM > 0 ? (totalPts / costInM).toFixed(1) : '—'
 
-    const mins90         = minutes / 90
-    const truDefConPer90 = mins90 > 0 ? defConRaw / mins90 : 0
-    const avgMins        = minutes / Math.max(starts, 1)
-    const defConPerGame  = truDefConPer90 * (avgMins / 90)
+    const avgMins       = minutes / Math.max(starts, 1)
+    const defConPerGame = defConRaw * (avgMins / 90)
 
     captainPicks.push({
       rank:           0,
