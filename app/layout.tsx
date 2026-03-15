@@ -63,6 +63,7 @@ export const metadata: Metadata = {
     title: 'False Nine',
   },
   icons: {
+    icon: '/favicon.ico',
     apple: '/icons/icon-192.png',
   },
 }
