@@ -1,15 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const UNLOCK_GATED_PATHS = ['/lms', '/fpl', '/super-six']
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Always allow through
   if (
     pathname.startsWith('/api/') ||
-    pathname.startsWith('/coming-soon') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth/') ||
     pathname === '/' ||
@@ -17,24 +14,14 @@ export async function middleware(request: NextRequest) {
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt' ||
     pathname === '/fpl' ||
-    pathname === '/lms/process-gw' || // allow cron job through 
+    pathname === '/lms/process-gw' ||
     pathname.startsWith('/lms/create-checkout') ||
-pathname.startsWith('/lms/webhook') 
+    pathname.startsWith('/lms/webhook')
   ) {
     return NextResponse.next()
   }
 
-  // Access code gate — only for LMS, FPL, Super Six
-  if (UNLOCK_GATED_PATHS.some(p => pathname.startsWith(p))) {
-    const appUnlocked = request.cookies.get('app_unlocked')?.value
-    if (appUnlocked !== 'true') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/coming-soon'
-      return NextResponse.redirect(url)
-    }
-  }
-
-  // Supabase auth check for everything else that's not public
+  // Supabase auth check
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
