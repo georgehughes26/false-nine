@@ -76,9 +76,10 @@ export default function CreateGame() {
     setError(null)
     if (!name.trim()) { setError('Please enter a game name'); return }
     setLoading(true)
-
+  
     const code = generateCode()
-
+  
+    // Create game with unpaid status first
     const { data: game, error: gameError } = await supabase
       .from('lms_games')
       .insert({
@@ -90,19 +91,28 @@ export default function CreateGame() {
         pot: 0,
         start_gw: startGw,
         current_gw: startGw,
+        payment_status: 'unpaid',
       })
       .select()
       .single()
-
+  
     if (gameError) { setError(gameError.message); setLoading(false); return }
-
+  
     await supabase.from('lms_entries').insert({
       game_id: game.id,
       user_id: user.id,
       has_paid: true,
     })
-
-    router.push(`/lms/${game.id}`)
+  
+    // Redirect to Stripe Checkout
+    const res = await fetch('/api/lms/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId: game.id, userId: user.id }),
+    })
+  
+    const { url } = await res.json()
+    window.location.href = url
   }
 
   function formatGWDate(date: Date | null) {
