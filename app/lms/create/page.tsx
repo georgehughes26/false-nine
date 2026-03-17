@@ -5,8 +5,8 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 
 const supabase = createBrowserClient(
-  'https://wuripncsrdpezpoxhvcb.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cmlwbmNzcmRwZXpwb3hodmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzIyNjMsImV4cCI6MjA4NzYwODI2M30.nvymXC2Z9wpCZJ6vDJ1S1nR404s62uJgu-uure2NTj0'
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 function generateCode() {
@@ -40,6 +40,9 @@ export default function CreateGame() {
         .order('datetime', { ascending: true })
 
       if (matches) {
+        const now = Date.now()
+        const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000
+
         const gws: Record<number, { total: number, played: number, earliest: Date | null }> = {}
         matches.forEach((m: any) => {
           const gw = parseInt(m.round?.match(/(\d+)/)?.[1] ?? '0')
@@ -48,7 +51,11 @@ export default function CreateGame() {
           gws[gw].total++
           if (m.goals_h !== null && m.goals_a !== null) gws[gw].played++
           const dt = new Date(m.datetime)
-          if (!gws[gw].earliest || dt < gws[gw].earliest!) gws[gw].earliest = dt
+          // Exclude rescheduled matches played more than 7 days ago from earliest date
+          const isOldRescheduled = m.goals_h !== null && dt.getTime() < sevenDaysAgo
+          if (!isOldRescheduled && (!gws[gw].earliest || dt < gws[gw].earliest!)) {
+            gws[gw].earliest = dt
+          }
         })
 
         // Only show GWs that haven't fully played yet
@@ -59,7 +66,6 @@ export default function CreateGame() {
 
         setGwOptions(upcoming)
 
-        // Default to the next GW (first with any unplayed matches)
         if (upcoming.length > 0) setStartGw(upcoming[0].gw)
       }
     }
@@ -147,51 +153,49 @@ export default function CreateGame() {
           </div>
 
           <div>
-  <div className="field-label">Starting Gameweek</div>
-  <select
-    className="input"
-    value={startGw}
-    onChange={e => setStartGw(parseInt(e.target.value))}
-    style={{ appearance: 'none', cursor: 'pointer' }}
-  >
-    {gwOptions.map(({ gw, earliestDate }) => (
-      <option key={gw} value={gw} style={{ background: '#0e1318' }}>
-        GW{gw}{earliestDate ? ` · ${formatGWDate(earliestDate)}` : ''}
-      </option>
-    ))}
-  </select>
-</div>
+            <div className="field-label">Starting Gameweek</div>
+            <select
+              className="input"
+              value={startGw}
+              onChange={e => setStartGw(parseInt(e.target.value))}
+              style={{ appearance: 'none', cursor: 'pointer' }}
+            >
+              {gwOptions.map(({ gw, earliestDate }) => (
+                <option key={gw} value={gw} style={{ background: '#0e1318' }}>
+                  GW{gw}{earliestDate ? ` · ${formatGWDate(earliestDate)}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
 
-{/* Deadline box */}
-{(() => {
-  const selected = gwOptions.find(o => o.gw === startGw)
-  if (!selected?.earliestDate) return null
-  const deadline = new Date(selected.earliestDate.getTime() - 5 * 60 * 1000)
-  return (
-    <div style={{
-      background: 'rgba(0,200,100,0.06)',
-      border: '1px solid rgba(0,200,100,0.15)',
-      borderRadius: '10px',
-      padding: '12px 16px',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    }}>
-      <div>
-        <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#8896a8', marginBottom: '4px' }}>
-          Pick Deadline
-        </div>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: '#e8edf2' }}>
-          {deadline.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-          {' · '}
-          {deadline.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      </div>
-    </div>
-  )
-})()}
-
-          
+          {/* Deadline box */}
+          {(() => {
+            const selected = gwOptions.find(o => o.gw === startGw)
+            if (!selected?.earliestDate) return null
+            const deadline = new Date(selected.earliestDate.getTime() - 5 * 60 * 1000)
+            return (
+              <div style={{
+                background: 'rgba(0,200,100,0.06)',
+                border: '1px solid rgba(0,200,100,0.15)',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#8896a8', marginBottom: '4px' }}>
+                    Pick Deadline
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#e8edf2' }}>
+                    {deadline.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {' · '}
+                    {deadline.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
 
           {error && <div className="error">{error}</div>}
 
