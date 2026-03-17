@@ -43,7 +43,7 @@ export default function CreateGame() {
         const now = Date.now()
         const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000
 
-        const gws: Record<number, { total: number, played: number, earliest: Date | null }> = {}
+        const gws: Record<number, { total: number; played: number; earliest: Date | null }> = {}
         matches.forEach((m: any) => {
           const gw = parseInt(m.round?.match(/(\d+)/)?.[1] ?? '0')
           if (!gw) return
@@ -51,21 +51,18 @@ export default function CreateGame() {
           gws[gw].total++
           if (m.goals_h !== null && m.goals_a !== null) gws[gw].played++
           const dt = new Date(m.datetime)
-          // Exclude rescheduled matches played more than 7 days ago from earliest date
           const isOldRescheduled = m.goals_h !== null && dt.getTime() < sevenDaysAgo
           if (!isOldRescheduled && (!gws[gw].earliest || dt < gws[gw].earliest!)) {
             gws[gw].earliest = dt
           }
         })
 
-        // Only show GWs that haven't fully played yet
         const upcoming = Object.entries(gws)
           .filter(([, v]) => v.played < v.total)
           .map(([gw, v]) => ({ gw: parseInt(gw), earliestDate: v.earliest }))
           .sort((a, b) => a.gw - b.gw)
 
         setGwOptions(upcoming)
-
         if (upcoming.length > 0) setStartGw(upcoming[0].gw)
       }
     }
@@ -76,10 +73,9 @@ export default function CreateGame() {
     setError(null)
     if (!name.trim()) { setError('Please enter a game name'); return }
     setLoading(true)
-  
+
     const code = generateCode()
-  
-    // Create game with unpaid status first
+
     const { data: game, error: gameError } = await supabase
       .from('lms_games')
       .insert({
@@ -95,23 +91,35 @@ export default function CreateGame() {
       })
       .select()
       .single()
-  
+
     if (gameError) { setError(gameError.message); setLoading(false); return }
-  
+
     await supabase.from('lms_entries').insert({
       game_id: game.id,
       user_id: user.id,
       has_paid: true,
     })
-  
-    // Redirect to Stripe Checkout
+
     const res = await fetch('/api/lms/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ gameId: game.id, userId: user.id }),
     })
-  
+
+    if (!res.ok) {
+      const text = await res.text()
+      setError(`Checkout failed: ${text}`)
+      setLoading(false)
+      return
+    }
+
     const { url } = await res.json()
+    if (!url) {
+      setError('No checkout URL returned')
+      setLoading(false)
+      return
+    }
+
     window.location.href = url
   }
 
@@ -178,7 +186,6 @@ export default function CreateGame() {
             </select>
           </div>
 
-          {/* Deadline box */}
           {(() => {
             const selected = gwOptions.find(o => o.gw === startGw)
             if (!selected?.earliestDate) return null
@@ -214,7 +221,7 @@ export default function CreateGame() {
             onClick={handleCreate}
             disabled={loading || !user}
           >
-            {loading ? 'Creating...' : 'Create Game - £5'}
+            {loading ? 'Creating...' : 'Create Game - £4.99'}
           </button>
         </div>
       </div>
