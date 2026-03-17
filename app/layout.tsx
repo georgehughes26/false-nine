@@ -77,13 +77,18 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#080c10" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7657213088817585"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ServiceWorkerRegistration />
         <CookieBanner />
         {children}
+        <GoogleAnalytics gaId="G-8LCQM0K62T" />
       </body>
-      <GoogleAnalytics gaId="G-8LCQM0K62T" />
     </html>
-  );
+  )
 }
