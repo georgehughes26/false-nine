@@ -17,7 +17,9 @@ export async function middleware(request: NextRequest) {
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt' ||
     pathname === '/fpl' ||
-    pathname === '/lms/process-gw'  // allow cron job through
+    pathname === '/lms/process-gw' || // allow cron job through 
+    pathname.startsWith('/lms/create-checkout') ||
+pathname.startsWith('/lms/webhook') 
   ) {
     return NextResponse.next()
   }
