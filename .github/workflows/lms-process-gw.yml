@@ -11,6 +11,6 @@ jobs:
     steps:
       - name: Process LMS Gameweek
         run: |
-          curl -X POST https://falsenineapp.com/app/lms/process-gw \
+          curl -X POST https://falsenineapp.com/lms/process-gw \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"
