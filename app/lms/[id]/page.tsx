@@ -130,7 +130,9 @@ export default function GamePage() {
 
   const pickWindowOpen = (() => {
     if (!matches.length) return false
-    const earliest = Math.min(...matches.map(m => new Date(m.datetime).getTime()))
+    const unplayed = matches.filter(m => m.goals_h === null)
+    if (!unplayed.length) return false
+    const earliest = Math.min(...unplayed.map(m => new Date(m.datetime).getTime()))
     return Date.now() < earliest - 5 * 60 * 1000
   })()
 
