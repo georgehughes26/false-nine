@@ -5,9 +5,14 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter, useParams } from 'next/navigation'
 
 const supabase = createBrowserClient(
-  'https://wuripncsrdpezpoxhvcb.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cmlwbmNzcmRwZXpwb3hodmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzIyNjMsImV4cCI6MjA4NzYwODI2M30.nvymXC2Z9wpCZJ6vDJ1S1nR404s62uJgu-uure2NTj0'
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+function getEmail(profiles: any): string {
+  const profile = Array.isArray(profiles) ? profiles[0] : profiles
+  return profile?.email?.split('@')[0] ?? 'Unknown'
+}
 
 export default function GamePage() {
   const router = useRouter()
@@ -63,7 +68,6 @@ export default function GamePage() {
         .eq('game_id', id)
       setPicks(allPicks ?? [])
 
-      // Use current_gw from game row — set by process-gw route
       const activeGwNum = game.current_gw ?? game.start_gw
       setCurrentGw(activeGwNum)
 
@@ -80,7 +84,6 @@ export default function GamePage() {
         })
         setMatches(gwMatches)
 
-        // GW is complete if all matches have results
         const complete = gwMatches.length > 0 && gwMatches.every(
           (m: any) => m.goals_h !== null && m.goals_a !== null
         )
@@ -221,7 +224,8 @@ export default function GamePage() {
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.4; transition: opacity 0.2s; text-decoration: none; color: inherit; }
         .nav-item.active { opacity: 1; }
         .nav-icon { font-size: 20px; }
-        .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #00c864; }
+        .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+        .nav-item.active .nav-label { color: #00c864; }
         .nav-item:not(.active) .nav-label { color: #8896a8; }
       `}</style>
 
@@ -242,13 +246,12 @@ export default function GamePage() {
           </div>
         </div>
 
-        {/* Winner banner */}
         {isComplete && (
           <div className="winner-banner">
             <div className="winner-label">🏆 Winner</div>
             <div className="winner-name">
               {winner
-                ? winner.profiles?.email?.split('@')[0]
+                ? getEmail(winner.profiles)
                 : 'No winner — all eliminated'}
             </div>
           </div>
@@ -356,7 +359,6 @@ export default function GamePage() {
               <div className="section-label">Players — {aliveCount} alive</div>
               <div className="card">
                 {entries.map((entry: any) => {
-                  // Only show GW picks once the GW is complete
                   const gwPick = gwComplete
                     ? picks.find(p => p.user_id === entry.user_id && p.gameweek === currentGw)
                     : null
@@ -366,7 +368,7 @@ export default function GamePage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div className={`status-dot ${entry.status === 'alive' ? 'dot-alive' : 'dot-eliminated'}`} />
                         <div>
-                          <div className="entry-email">{entry.profiles?.email?.split('@')[0]}</div>
+                          <div className="entry-email">{getEmail(entry.profiles)}</div>
                           {gwPick && (
                             <div className="entry-pick">
                               GW{currentGw}: {gwPick.team_name}
@@ -431,6 +433,10 @@ export default function GamePage() {
           <a href="/lms" className="nav-item active">
             <span className="nav-icon">🏆</span>
             <span className="nav-label">LMS</span>
+          </a>
+          <a href="/fpl" className="nav-item">
+            <span className="nav-icon">📊</span>
+            <span className="nav-label">FPL</span>
           </a>
           <a href="/account" className="nav-item">
             <span className="nav-icon">👤</span>
