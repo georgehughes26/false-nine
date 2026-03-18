@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import FPLFixtureDifficulty from './FPLFixtureDifficulty'
+import Nav from '@/components/Nav'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

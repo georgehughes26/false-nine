@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServer } from '@/lib/supabase-server'
 import GWFilterPage from './GWFilterPage'
+import Nav from '@/components/Nav'
 
 export const revalidate = 30
 

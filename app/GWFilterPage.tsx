@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import AdUnit from '@/components/AdUnit'
+import Nav from '@/components/Nav'
 
 const IN_PLAY_STATUSES = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']
 const FINISHED_STATUSES = ['FT', 'AET', 'PEN']
@@ -349,28 +350,7 @@ export default function GWFilterPage({ matches, isPro }: Props) {
           )}
         </div>
 
-        <nav className="nav">
-          <a href="/" className="nav-item active">
-            <span className="nav-icon">⚽</span>
-            <span className="nav-label">Fixtures</span>
-          </a>
-          <a href="/lms" className="nav-item">
-            <span className="nav-icon">🏆</span>
-            <span className="nav-label">LMS</span>
-          </a>
-          <a href="/fpl" className="nav-item">
-            <span className="nav-icon">📋</span>
-            <span className="nav-label">FPL</span>
-          </a>
-          <a href="/super-six" className="nav-item">
-            <span className="nav-icon">6️⃣</span>
-            <span className="nav-label">Super Six</span>
-          </a>
-          <a href="/account" className="nav-item">
-            <span className="nav-icon">👤</span>
-            <span className="nav-label">Account</span>
-          </a>
-        </nav>
+        <Nav/>
       </div>
     </>
   )

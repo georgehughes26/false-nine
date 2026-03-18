@@ -5,6 +5,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import SignOutButton from './SignOutButton'
 import ChangePasswordForm from './ChangePasswordForm'
+import Nav from '@/components/Nav'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -130,28 +131,7 @@ export default function AccountPage() {
           </div>
         </div>
 
-        <nav className="nav">
-          <a href="/" className="nav-item">
-            <span className="nav-icon">⚽</span>
-            <span className="nav-label">Fixtures</span>
-          </a>
-          <a href="/lms" className="nav-item">
-            <span className="nav-icon">🏆</span>
-            <span className="nav-label">LMS</span>
-          </a>
-          <a href="/fpl" className="nav-item">
-            <span className="nav-icon">📋</span>
-            <span className="nav-label">FPL</span>
-          </a>
-          <a href="/super-six" className="nav-item">
-            <span className="nav-icon">6️⃣</span>
-            <span className="nav-label">Super Six</span>
-          </a>
-          <a href="/account" className="nav-item active">
-            <span className="nav-icon">👤</span>
-            <span className="nav-label">Account</span>
-          </a>
-        </nav>
+        <Nav/>
       </div>
     </>
   )

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { CaptainPick } from './page'
+import Nav from '@/components/Nav'
 
 interface Fixture {
   gw: number
@@ -427,24 +428,7 @@ export default function FPLFixtureDifficulty({ teams, upcomingGWs, captainPicks,
           </div>
         )}
 
-        <nav className="nav">
-          <a href="/" className="nav-item">
-            <span className="nav-icon">⚽</span>
-            <span className="nav-label">Fixtures</span>
-          </a>
-          <a href="/lms" className="nav-item">
-            <span className="nav-icon">🏆</span>
-            <span className="nav-label">LMS</span>
-          </a>
-          <a href="/fpl" className="nav-item active">
-            <span className="nav-icon">📊</span>
-            <span className="nav-label">FPL</span>
-          </a>
-          <a href="/account" className="nav-item">
-            <span className="nav-icon">👤</span>
-            <span className="nav-label">Account</span>
-          </a>
-        </nav>
+        <Nav />
       </div>
     </>
   )

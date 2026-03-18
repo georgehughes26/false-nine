@@ -4,7 +4,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Always allow through
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/login') ||
@@ -14,6 +13,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt' ||
     pathname === '/fpl' ||
+    pathname === '/lms' ||          // ← add this
     pathname === '/lms/process-gw' ||
     pathname.startsWith('/lms/create-checkout') ||
     pathname.startsWith('/lms/webhook')
